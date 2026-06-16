@@ -5,13 +5,14 @@ import cors from "cors";
 import authRoutes from "./routes/auth";
 import eventRoutes from "./routes/events";
 import invitationRoutes from "./routes/invitations";
+import { uploadDir } from "./lib/upload";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads/events", express.static(uploadDir));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
