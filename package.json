@@ -1,7 +1,7 @@
 {
   "name": "sistema-entrada",
   "private": true,
-  "workspaces": ["backend", "web", "mobile"],
+  "workspaces": ["backend", "web"],
   "scripts": {
     "dev:backend": "npm run dev --workspace=backend",
     "dev:web": "npm run dev --workspace=web",
