@@ -79,11 +79,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .getEvents()
-      .then(setEvents)
-      .catch(() => toast.error("Error cargando eventos"))
-      .finally(() => setLoading(false));
+    let mounted = true;
+
+    async function load(initial = false) {
+      try {
+        const evs = await api.getEvents();
+        if (mounted) setEvents(evs);
+      } catch {
+        if (initial && mounted) toast.error("Error cargando eventos");
+      } finally {
+        if (initial && mounted) setLoading(false);
+      }
+    }
+
+    load(true);
+    const interval = setInterval(() => load(false), 10000);
+    return () => { mounted = false; clearInterval(interval); };
   }, []);
 
   async function deleteEvent(e: React.MouseEvent, id: string) {

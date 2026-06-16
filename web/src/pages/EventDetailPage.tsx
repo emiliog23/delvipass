@@ -224,13 +224,29 @@ export default function EventDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([api.getEvent(id), api.getInvitations(id)])
-      .then(([ev, invs]) => {
-        setEvent(ev);
-        setInvitations(invs);
-      })
-      .catch(() => toast.error("Error cargando el evento"))
-      .finally(() => setLoading(false));
+    let mounted = true;
+
+    async function load(initial = false) {
+      try {
+        if (initial) {
+          const [ev, invs] = await Promise.all([api.getEvent(id!), api.getInvitations(id!)]);
+          if (!mounted) return;
+          setEvent(ev);
+          setInvitations(invs);
+        } else {
+          const invs = await api.getInvitations(id!);
+          if (mounted) setInvitations(invs);
+        }
+      } catch {
+        if (initial && mounted) toast.error("Error cargando el evento");
+      } finally {
+        if (initial && mounted) setLoading(false);
+      }
+    }
+
+    load(true);
+    const interval = setInterval(() => load(false), 5000);
+    return () => { mounted = false; clearInterval(interval); };
   }, [id]);
 
   async function addInvitation(e: React.FormEvent) {
