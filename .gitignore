@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+dev.db
+dev.db-journal
+backend/uploads/events/*
+!backend/uploads/events/.gitkeep
+*.log
+.DS_Store

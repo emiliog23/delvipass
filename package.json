@@ -1,0 +1,14 @@
+{
+  "name": "sistema-entrada",
+  "private": true,
+  "workspaces": ["backend", "web", "mobile"],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:web": "npm run dev --workspace=web",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
+    "install:all": "npm install && npm install --workspace=backend && npm install --workspace=web"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
