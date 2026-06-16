@@ -1,4 +1,4 @@
-const BASE = "/api";
+const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
 
 function getToken() {
   return localStorage.getItem("token");
@@ -42,7 +42,7 @@ export const api = {
     const token = getToken();
     const form = new FormData();
     form.append("image", file);
-    const res = await fetch(`/api/events/${id}/image`, {
+    const res = await fetch(`${(import.meta.env.VITE_API_URL ?? "")}/api/events/${id}/image`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
