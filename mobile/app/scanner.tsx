@@ -5,8 +5,27 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { Audio } from "expo-av";
 import { useRouter } from "expo-router";
 import { api } from "../src/lib/api";
+
+async function playSound(type: "success" | "warning" | "error") {
+  try {
+    const src =
+      type === "success"
+        ? require("../assets/sounds/success.wav")
+        : type === "warning"
+        ? require("../assets/sounds/warning.wav")
+        : require("../assets/sounds/error.wav");
+    const { sound } = await Audio.Sound.createAsync(src);
+    await sound.playAsync();
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) sound.unloadAsync();
+    });
+  } catch {
+    // silently ignore if audio fails
+  }
+}
 
 type Result = {
   ok: boolean;
@@ -44,7 +63,16 @@ export default function ScannerScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
     ]).start();
-    Vibration.vibrate(r?.ok ? [0, 80] : [0, 100, 50, 100]);
+    if (r?.ok) {
+      playSound("success");
+      Vibration.vibrate([0, 80]);
+    } else if (r?.alreadyEntered) {
+      playSound("warning");
+      Vibration.vibrate([0, 100, 50, 100]);
+    } else {
+      playSound("error");
+      Vibration.vibrate([0, 100, 50, 100]);
+    }
     setTimeout(() => resetScanner(), 3500);
   }
 

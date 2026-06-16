@@ -14,7 +14,9 @@
       "adaptiveIcon": {
         "backgroundColor": "#667eea"
       },
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       [
@@ -22,7 +24,8 @@
         {
           "cameraPermission": "Necesitamos acceso a la cámara para escanear los códigos QR de los invitados."
         }
-      ]
+      ],
+      "expo-router"
     ]
   }
 }
