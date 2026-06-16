@@ -20,5 +20,3 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         sync: false
-      - key: BACKEND_URL
-        sync: false
