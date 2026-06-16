@@ -13,6 +13,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ title: "Boletero" }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="scanner" options={{ title: "Escanear QR", headerShown: false }} />
       </Stack>
     </>

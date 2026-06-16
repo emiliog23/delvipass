@@ -39,6 +39,31 @@ router.post("/", async (req: AuthRequest, res: Response) => {
   res.status(201).json(event);
 });
 
+router.get("/stats", async (req: AuthRequest, res: Response) => {
+  const events = await prisma.event.findMany({
+    where: { creatorId: req.userId },
+    include: {
+      _count: { select: { invitations: true } },
+      invitations: { where: { status: "entered" }, select: { id: true } },
+    },
+    orderBy: { date: "desc" },
+  });
+  const total = events.reduce((sum, e) => sum + e._count.invitations, 0);
+  const entered = events.reduce((sum, e) => sum + e.invitations.length, 0);
+  res.json({
+    total,
+    entered,
+    events: events.map((e) => ({
+      id: e.id,
+      name: e.name,
+      date: e.date,
+      venue: e.venue,
+      total: e._count.invitations,
+      entered: e.invitations.length,
+    })),
+  });
+});
+
 router.get("/:id", async (req: AuthRequest, res: Response) => {
   const event = await prisma.event.findFirst({
     where: { id: req.params.id, creatorId: req.userId },

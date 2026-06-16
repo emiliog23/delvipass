@@ -39,6 +39,12 @@ export interface EventItem {
   _count?: { invitations: number };
 }
 
+export interface StatsResult {
+  total: number;
+  entered: number;
+  events: { id: string; name: string; date: string; venue: string; total: number; entered: number }[];
+}
+
 export const api = {
   login: (username: string, password: string) =>
     req<{ token: string; user: { id: string; name: string; username: string } }>("/auth/login", {
@@ -47,6 +53,8 @@ export const api = {
     }),
 
   getEvents: () => req<EventItem[]>("/events"),
+
+  getStats: () => req<StatsResult>("/events/stats"),
 
   validateQR: (qrToken: string) =>
     req<ValidateResult>("/invitations/validate", {

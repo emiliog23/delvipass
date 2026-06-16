@@ -21,7 +21,7 @@ export default function LoginScreen() {
     try {
       const { token } = await api.login(username.trim(), password.trim());
       setToken(token);
-      router.replace("/scanner");
+      router.replace("/home");
     } catch (err: unknown) {
       Alert.alert("Error", err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {
