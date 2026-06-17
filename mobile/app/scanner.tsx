@@ -46,6 +46,9 @@ export default function ScannerScreen() {
   const [result, setResult] = useState<Result>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  // Ref como lock sincrónico — evita que eventos duplicados de la cámara
+  // pasen el guard antes de que el estado asíncrono se actualice.
+  const scanLock = useRef(false);
 
   function isInFrame(bounds?: { origin: { x: number; y: number }; size: { width: number; height: number } }) {
     if (!bounds) return true;
@@ -80,13 +83,15 @@ export default function ScannerScreen() {
     Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
       setResult(null);
       scaleAnim.setValue(0.8);
+      scanLock.current = false;
       setScanning(true);
     });
   }
 
   async function handleBarCodeScanned({ data, bounds }: { data: string; bounds?: { origin: { x: number; y: number }; size: { width: number; height: number } } }) {
-    if (!scanning || loading) return;
+    if (scanLock.current) return;
     if (!isInFrame(bounds)) return;
+    scanLock.current = true;
     setScanning(false);
     setLoading(true);
     try {
