@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { api, Event, Invitation, resolveImageUrl } from "../lib/api";
 import Layout from "../components/Layout";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const s: Record<string, React.CSSProperties> = {
   header: { display: "flex", alignItems: "center", gap: 12, marginBottom: 24 },
@@ -196,6 +197,7 @@ function formatDate(d: string) {
 }
 
 export default function EventDetailPage() {
+  const isMobile = useIsMobile();
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<Event | null>(null);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -370,16 +372,16 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      <div style={s.statsRow}>
-        <div style={s.stat}>
+      <div style={{ ...s.statsRow, flexDirection: isMobile ? "column" : "row" }}>
+        <div style={{ ...s.stat, flex: isMobile ? "none" : 1 }}>
           <div style={s.statNum}>{invitations.length}</div>
           <div style={s.statLabel}>Entradas emitidas</div>
         </div>
-        <div style={s.stat}>
+        <div style={{ ...s.stat, flex: isMobile ? "none" : 1 }}>
           <div style={{ ...s.statNum, color: "#4ade80" }}>{entered}</div>
           <div style={s.statLabel}>Ingresaron</div>
         </div>
-        <div style={s.stat}>
+        <div style={{ ...s.stat, flex: isMobile ? "none" : 1 }}>
           <div style={{ ...s.statNum, color: "#facc15" }}>{invitations.length - entered}</div>
           <div style={s.statLabel}>Pendientes</div>
         </div>
@@ -394,7 +396,7 @@ export default function EventDetailPage() {
 
       {showForm && (
         <form style={s.form} onSubmit={addInvitation}>
-          <div style={s.formRow}>
+          <div style={{ ...s.formRow, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
             <div>
               <label style={s.label}>Nombre</label>
               <input
@@ -425,97 +427,101 @@ export default function EventDetailPage() {
         </form>
       )}
 
-      <div style={s.table}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={s.th}>Nombre</th>
-              <th style={s.th}>Telefono</th>
-              <th style={s.th}>Estado</th>
-              <th style={s.th}>Envio</th>
-              <th style={s.th}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invitations.length === 0 ? (
+      {isMobile ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {invitations.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#333", padding: 32, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10 }}>
+              No hay invitados aun
+            </div>
+          ) : invitations.map(inv => (
+            <div key={inv.id} style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <strong style={{ color: "#e0e0e0", fontSize: 15 }}>{inv.guestName}</strong>
+                {inv.status === "entered" ? (
+                  <span style={{ ...s.statusBadge, background: "#0d1f0d", color: "#4ade80", border: "1px solid #1a4a1a" }}>
+                    <CheckCircle size={10} /> Ingreso
+                  </span>
+                ) : (
+                  <span style={{ ...s.statusBadge, background: "#1a1500", color: "#facc15", border: "1px solid #3a3000" }}>
+                    <Clock size={10} /> Pendiente
+                  </span>
+                )}
+              </div>
+              {inv.guestPhone && <div style={{ color: "#555", fontSize: 12, marginBottom: 10 }}>{inv.guestPhone}</div>}
+              <div style={s.actions}>
+                <a href={`/invite/${inv.token}`} target="_blank" rel="noreferrer"
+                  style={{ ...s.actionBtn, background: "#1e1228", color: "#9d6fe8", textDecoration: "none" }}>
+                  <ExternalLink size={11} /> Ver
+                </a>
+                <button style={{ ...s.actionBtn, background: "#0d1a0d", color: "#4ade80" }} onClick={() => openWhatsApp(inv)}>
+                  <MessageCircle size={11} /> WhatsApp
+                </button>
+                <button style={{ ...s.actionBtn, background: "#1a0d0d", color: "#f87171" }} onClick={() => deleteInvitation(inv.id)}>
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={s.table}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
               <tr>
-                <td
-                  colSpan={5}
-                  style={{ ...s.td, textAlign: "center", color: "#333", padding: 32 }}
-                >
-                  No hay invitados aun
-                </td>
+                <th style={s.th}>Nombre</th>
+                <th style={s.th}>Telefono</th>
+                <th style={s.th}>Estado</th>
+                <th style={s.th}>Envio</th>
+                <th style={s.th}>Acciones</th>
               </tr>
-            ) : (
-              invitations.map(inv => (
-                <tr key={inv.id}>
-                  <td style={s.td}>
-                    <strong style={{ color: "#e0e0e0" }}>{inv.guestName}</strong>
-                  </td>
-                  <td style={{ ...s.td, color: "#666" }}>{inv.guestPhone || "—"}</td>
-                  <td style={s.td}>
-                    {inv.status === "entered" ? (
-                      <span
-                        style={{
-                          ...s.statusBadge,
-                          background: "#0d1f0d",
-                          color: "#4ade80",
-                          border: "1px solid #1a4a1a",
-                        }}
-                      >
-                        <CheckCircle size={10} /> Ingreso
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          ...s.statusBadge,
-                          background: "#1a1500",
-                          color: "#facc15",
-                          border: "1px solid #3a3000",
-                        }}
-                      >
-                        <Clock size={10} /> Pendiente
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ ...s.td, color: "#555", fontSize: 12 }}>
-                    {inv.sentAt ? "Enviado" : "—"}
-                  </td>
-                  <td style={s.td}>
-                    <div style={s.actions}>
-                      <a
-                        href={`/invite/${inv.token}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          ...s.actionBtn,
-                          background: "#1e1228",
-                          color: "#9d6fe8",
-                          textDecoration: "none",
-                        }}
-                      >
-                        <ExternalLink size={11} /> Ver
-                      </a>
-                      <button
-                        style={{ ...s.actionBtn, background: "#0d1a0d", color: "#4ade80" }}
-                        onClick={() => openWhatsApp(inv)}
-                      >
-                        <MessageCircle size={11} /> WhatsApp
-                      </button>
-                      <button
-                        style={{ ...s.actionBtn, background: "#1a0d0d", color: "#f87171" }}
-                        onClick={() => deleteInvitation(inv.id)}
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {invitations.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ ...s.td, textAlign: "center", color: "#333", padding: 32 }}>
+                    No hay invitados aun
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                invitations.map(inv => (
+                  <tr key={inv.id}>
+                    <td style={s.td}>
+                      <strong style={{ color: "#e0e0e0" }}>{inv.guestName}</strong>
+                    </td>
+                    <td style={{ ...s.td, color: "#666" }}>{inv.guestPhone || "—"}</td>
+                    <td style={s.td}>
+                      {inv.status === "entered" ? (
+                        <span style={{ ...s.statusBadge, background: "#0d1f0d", color: "#4ade80", border: "1px solid #1a4a1a" }}>
+                          <CheckCircle size={10} /> Ingreso
+                        </span>
+                      ) : (
+                        <span style={{ ...s.statusBadge, background: "#1a1500", color: "#facc15", border: "1px solid #3a3000" }}>
+                          <Clock size={10} /> Pendiente
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ ...s.td, color: "#555", fontSize: 12 }}>{inv.sentAt ? "Enviado" : "—"}</td>
+                    <td style={s.td}>
+                      <div style={s.actions}>
+                        <a href={`/invite/${inv.token}`} target="_blank" rel="noreferrer"
+                          style={{ ...s.actionBtn, background: "#1e1228", color: "#9d6fe8", textDecoration: "none" }}>
+                          <ExternalLink size={11} /> Ver
+                        </a>
+                        <button style={{ ...s.actionBtn, background: "#0d1a0d", color: "#4ade80" }} onClick={() => openWhatsApp(inv)}>
+                          <MessageCircle size={11} /> WhatsApp
+                        </button>
+                        <button style={{ ...s.actionBtn, background: "#1a0d0d", color: "#f87171" }} onClick={() => deleteInvitation(inv.id)}>
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Layout>
   );
 }

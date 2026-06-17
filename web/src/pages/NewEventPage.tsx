@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { ArrowLeft, ImagePlus, X } from "lucide-react";
 import { api } from "../lib/api";
 import Layout from "../components/Layout";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const s: Record<string, React.CSSProperties> = {
   header: { display: "flex", alignItems: "center", gap: 14, marginBottom: 28 },
@@ -21,7 +22,6 @@ const s: Record<string, React.CSSProperties> = {
     background: "#1a1a1a",
     border: "1px solid #2a2a2a",
     borderRadius: 12,
-    padding: 28,
     maxWidth: 580,
   },
   label: { display: "block", marginBottom: 6, fontWeight: 600, color: "#888", fontSize: 13 },
@@ -103,6 +103,7 @@ const s: Record<string, React.CSSProperties> = {
 
 export default function NewEventPage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const now = new Date();
   now.setHours(20, 0, 0, 0);
@@ -166,7 +167,7 @@ export default function NewEventPage() {
         </Link>
         <h1 style={s.title}>Nuevo Evento</h1>
       </div>
-      <div style={s.card}>
+      <div style={{ ...s.card, padding: isMobile ? 18 : 28 }}>
         <form onSubmit={submit}>
           <div style={s.group}>
             <label style={s.label}>Imagen del evento</label>
@@ -213,7 +214,7 @@ export default function NewEventPage() {
               placeholder="Descripcion opcional..."
             />
           </div>
-          <div style={s.row}>
+          <div style={{ ...s.row, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
             <div style={s.group}>
               <label style={s.label}>Fecha y hora</label>
               <input
