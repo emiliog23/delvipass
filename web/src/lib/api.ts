@@ -1,4 +1,10 @@
-const BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
+const API_ORIGIN = import.meta.env.VITE_API_URL ?? "";
+const BASE = API_ORIGIN + "/api";
+
+export function resolveImageUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  return API_ORIGIN + path;
+}
 
 function getToken() {
   return localStorage.getItem("token");

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { api, PublicInvitation } from "../lib/api";
+import { api, PublicInvitation, resolveImageUrl } from "../lib/api";
 import { CalendarDays, MapPin, CheckCircle, Ticket } from "lucide-react";
 
 const s: Record<string, React.CSSProperties> = {
@@ -167,7 +167,7 @@ export default function InvitePage() {
       <div style={s.card}>
         {data.event.imageUrl ? (
           <div style={s.headerWithImage}>
-            <img src={data.event.imageUrl} alt={data.event.name} style={s.headerImage} />
+            <img src={resolveImageUrl(data.event.imageUrl)} alt={data.event.name} style={s.headerImage} />
             <div style={s.headerOverlay}>
               <div style={s.headerLabel}>Entrada</div>
               <div style={s.headerEvent}>{data.event.name}</div>

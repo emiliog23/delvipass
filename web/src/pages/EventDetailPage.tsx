@@ -5,7 +5,7 @@ import {
   ArrowLeft, Plus, MessageCircle, CheckCircle, Clock,
   Trash2, ExternalLink, Users, CalendarDays, MapPin, ImagePlus,
 } from "lucide-react";
-import { api, Event, Invitation } from "../lib/api";
+import { api, Event, Invitation, resolveImageUrl } from "../lib/api";
 import Layout from "../components/Layout";
 
 const s: Record<string, React.CSSProperties> = {
@@ -329,7 +329,7 @@ export default function EventDetailPage() {
         {event.imageUrl ? (
           <div style={s.eventImageOverlay}>
             <img
-              src={event.imageUrl}
+              src={resolveImageUrl(event.imageUrl)}
               alt={event.name}
               style={s.eventImage}
             />
