@@ -16,7 +16,8 @@ const eventSchema = z.object({
   venue: z.string().min(2),
   capacity: z.number().int().positive().optional(),
   purchaseEnabled: z.boolean().optional(),
-  mercadoPagoLink: z.string().url().optional().or(z.literal("")),
+  mpAccessToken: z.string().optional(),
+  price: z.number().positive().optional(),
 });
 
 router.get("/", async (req: AuthRequest, res: Response) => {

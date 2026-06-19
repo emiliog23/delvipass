@@ -28,7 +28,8 @@ model Event {
   capacity    Int?
   imageUrl        String?
   purchaseEnabled Boolean      @default(false)
-  mercadoPagoLink String?
+  mpAccessToken   String?
+  price           Float?
   createdAt       DateTime     @default(now())
   invitations     Invitation[]
 }

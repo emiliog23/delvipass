@@ -80,6 +80,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  getInvitationStatus: (invitationId: string) =>
+    req<InvitationStatus>(`/public/invitations/${invitationId}`),
 };
 
 export interface User {
@@ -98,7 +100,8 @@ export interface Event {
   capacity?: number;
   imageUrl?: string;
   purchaseEnabled?: boolean;
-  mercadoPagoLink?: string;
+  mpAccessToken?: string;
+  price?: number;
   createdAt: string;
   _count?: { invitations: number };
 }
@@ -111,17 +114,22 @@ export interface PublicEvent {
   venue: string;
   imageUrl?: string;
   capacity?: number;
+  price?: number;
   purchaseEnabled: boolean;
-  mercadoPagoLink?: string;
   _count: { invitations: number };
 }
 
 export interface PurchaseResult {
+  invitationId: string;
+  checkoutUrl: string;
+}
+
+export interface InvitationStatus {
   id: string;
-  token: string;
+  status: string;
   guestName: string;
-  qrDataUrl: string;
-  mercadoPagoLink: string;
+  qrDataUrl: string | null;
+  event: { name: string; date: string; venue: string; imageUrl?: string };
 }
 
 export interface Invitation {

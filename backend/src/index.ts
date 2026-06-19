@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth";
 import eventRoutes from "./routes/events";
 import invitationRoutes from "./routes/invitations";
 import publicRoutes from "./routes/public";
+import webhookRoutes from "./routes/webhooks";
 import { uploadDir } from "./lib/upload";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/public", publicRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, version: "1.0.0" }));
 

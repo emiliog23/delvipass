@@ -214,6 +214,7 @@ export default function EventDetailPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [savingPurchase, setSavingPurchase] = useState(false);
+  const [mpForm, setMpForm] = useState({ mpAccessToken: "", price: "" });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -243,6 +244,7 @@ export default function EventDetailPage() {
           if (!mounted) return;
           setEvent(ev);
           setInvitations(invs);
+          setMpForm({ mpAccessToken: "", price: ev.price?.toString() ?? "" });
         } else {
           const invs = await api.getInvitations(id!);
           if (mounted) setInvitations(invs);
@@ -287,7 +289,7 @@ export default function EventDetailPage() {
     }
   }
 
-  async function savePurchaseSettings(patch: { purchaseEnabled?: boolean; mercadoPagoLink?: string }) {
+  async function savePurchaseSettings(patch: { purchaseEnabled?: boolean; mpAccessToken?: string; price?: number }) {
     if (!id || !event) return;
     setSavingPurchase(true);
     try {
@@ -437,22 +439,45 @@ export default function EventDetailPage() {
           </label>
         </div>
 
-        <div>
-          <label style={{ ...s.label, marginBottom: 6 }}>Link de MercadoPago</label>
-          <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={{ ...s.label, marginBottom: 6 }}>Access Token de MercadoPago</label>
             <input
-              style={{ ...s.input, marginBottom: 0, flex: 1 }}
-              value={event.mercadoPagoLink ?? ""}
-              onChange={e => setEvent(ev => ev ? { ...ev, mercadoPagoLink: e.target.value } : ev)}
-              onBlur={e => savePurchaseSettings({ mercadoPagoLink: e.target.value })}
-              placeholder="https://mpago.la/..."
+              type="password"
+              style={{ ...s.input, marginBottom: 0 }}
+              value={mpForm.mpAccessToken}
+              onChange={e => setMpForm(f => ({ ...f, mpAccessToken: e.target.value }))}
+              placeholder={event.mpAccessToken ? "••••••••••• (configurado)" : "APP_USR-..."}
+              disabled={savingPurchase}
+            />
+          </div>
+          <div>
+            <label style={{ ...s.label, marginBottom: 6 }}>Precio (ARS)</label>
+            <input
+              type="number"
+              style={{ ...s.input, marginBottom: 0 }}
+              value={mpForm.price}
+              onChange={e => setMpForm(f => ({ ...f, price: e.target.value }))}
+              placeholder="Ej: 5000"
+              min={1}
               disabled={savingPurchase}
             />
           </div>
         </div>
 
-        {event.purchaseEnabled && event.mercadoPagoLink && (
-          <div style={s.purchaseUrl}>
+        <button
+          style={{ ...s.saveBtn, fontSize: 13, padding: "8px 20px" }}
+          disabled={savingPurchase}
+          onClick={() => savePurchaseSettings({
+            ...(mpForm.mpAccessToken ? { mpAccessToken: mpForm.mpAccessToken } : {}),
+            ...(mpForm.price ? { price: parseFloat(mpForm.price) } : {}),
+          })}
+        >
+          {savingPurchase ? "Guardando..." : "Guardar"}
+        </button>
+
+        {event.purchaseEnabled && event.mpAccessToken && event.price && (
+          <div style={{ ...s.purchaseUrl, marginTop: 14 }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
               {window.location.origin}/buy/{event.id}
             </span>

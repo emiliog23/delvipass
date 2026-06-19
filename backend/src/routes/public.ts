@@ -5,19 +5,49 @@ import prisma from "../lib/prisma";
 
 const router = Router();
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
+
+async function createMpPreference(
+  mpAccessToken: string,
+  eventName: string,
+  price: number,
+  guestName: string,
+  invitationId: string
+) {
+  const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${mpAccessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      items: [{ id: "entry", title: `Entrada - ${eventName}`, quantity: 1, unit_price: price, currency_id: "ARS" }],
+      payer: { name: guestName },
+      external_reference: invitationId,
+      back_urls: {
+        success: `${FRONTEND_URL}/buy/success`,
+        failure: `${FRONTEND_URL}/buy/cancel`,
+        pending: `${FRONTEND_URL}/buy/pending`,
+      },
+      auto_return: "approved",
+      notification_url: `${BACKEND_URL}/api/webhooks/mercadopago`,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).message || "Error creando preferencia en MercadoPago");
+  }
+  return res.json() as Promise<{ id: string; init_point: string; sandbox_init_point: string }>;
+}
+
+// Informacion publica del evento (sin access token)
 router.get("/events/:id", async (req: Request, res: Response) => {
   const event = await prisma.event.findUnique({
     where: { id: req.params.id },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      date: true,
-      venue: true,
-      imageUrl: true,
-      capacity: true,
-      purchaseEnabled: true,
-      mercadoPagoLink: true,
+      id: true, name: true, description: true, date: true, venue: true,
+      imageUrl: true, capacity: true, purchaseEnabled: true, price: true,
       _count: { select: { invitations: true } },
     },
   });
@@ -33,18 +63,16 @@ const purchaseSchema = z.object({
   guestPhone: z.string().min(6, "Telefono requerido"),
 });
 
+// Iniciar compra: crea invitation pending_payment + preferencia MP
 router.post("/events/:id/purchase", async (req: Request, res: Response) => {
   const event = await prisma.event.findUnique({
     where: { id: req.params.id },
     select: {
-      id: true,
-      purchaseEnabled: true,
-      mercadoPagoLink: true,
-      capacity: true,
-      _count: { select: { invitations: true } },
+      id: true, name: true, purchaseEnabled: true, mpAccessToken: true,
+      price: true, capacity: true, _count: { select: { invitations: true } },
     },
   });
-  if (!event || !event.purchaseEnabled || !event.mercadoPagoLink) {
+  if (!event || !event.purchaseEnabled || !event.mpAccessToken || !event.price) {
     res.status(400).json({ error: "Compra no disponible para este evento" });
     return;
   }
@@ -57,21 +85,47 @@ router.post("/events/:id/purchase", async (req: Request, res: Response) => {
     res.status(400).json({ error: parsed.error.errors[0].message });
     return;
   }
+
   const inv = await prisma.invitation.create({
     data: {
       eventId: req.params.id,
       guestName: parsed.data.guestName,
       guestPhone: parsed.data.guestPhone,
       source: "purchase",
+      status: "pending_payment",
     },
   });
-  const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
-  res.status(201).json({
+
+  try {
+    const pref = await createMpPreference(
+      event.mpAccessToken, event.name, event.price, parsed.data.guestName, inv.id
+    );
+    res.status(201).json({ invitationId: inv.id, checkoutUrl: pref.init_point });
+  } catch (err: unknown) {
+    await prisma.invitation.delete({ where: { id: inv.id } });
+    res.status(502).json({ error: err instanceof Error ? err.message : "Error con MercadoPago" });
+  }
+});
+
+// Estado de la invitation (para que la pagina de exito pollee)
+router.get("/invitations/:id", async (req: Request, res: Response) => {
+  const inv = await prisma.invitation.findUnique({
+    where: { id: req.params.id },
+    include: { event: { select: { name: true, date: true, venue: true, imageUrl: true } } },
+  });
+  if (!inv || inv.source !== "purchase") {
+    res.status(404).json({ error: "No encontrado" });
+    return;
+  }
+  const qrDataUrl = inv.status !== "pending_payment"
+    ? await QRCode.toDataURL(inv.token, { width: 300, margin: 2 })
+    : null;
+  res.json({
     id: inv.id,
-    token: inv.token,
+    status: inv.status,
     guestName: inv.guestName,
     qrDataUrl,
-    mercadoPagoLink: event.mercadoPagoLink,
+    event: inv.event,
   });
 });
 

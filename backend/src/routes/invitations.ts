@@ -48,6 +48,10 @@ router.post("/validate", async (req: Request, res: Response) => {
     res.status(404).json({ ok: false, error: "Entrada no encontrada" });
     return;
   }
+  if (inv.status === "pending_payment") {
+    res.json({ ok: false, error: "Pago pendiente de confirmacion" });
+    return;
+  }
   if (inv.status === "entered") {
     res.json({
       ok: false,
