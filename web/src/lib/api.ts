@@ -82,6 +82,11 @@ export const api = {
     }),
   getInvitationStatus: (invitationId: string) =>
     req<InvitationStatus>(`/public/invitations/${invitationId}`),
+  confirmPurchase: (invitationId: string, paymentId: string) =>
+    req<InvitationStatus>(`/public/invitations/${invitationId}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ paymentId }),
+    }),
 };
 
 export interface User {

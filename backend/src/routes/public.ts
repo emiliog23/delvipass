@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import QRCode from "qrcode";
 import prisma from "../lib/prisma";
+import { fetchMpPayment } from "../lib/mercadopago";
 
 const router = Router();
 
@@ -127,6 +128,48 @@ router.get("/invitations/:id", async (req: Request, res: Response) => {
     qrDataUrl,
     event: inv.event,
   });
+});
+
+// Confirmacion directa post-pago: el front llama esto con el payment_id de la URL de retorno
+router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
+  const { paymentId } = req.body;
+  if (!paymentId) {
+    res.status(400).json({ error: "paymentId requerido" });
+    return;
+  }
+
+  const inv = await prisma.invitation.findUnique({
+    where: { id: req.params.id },
+    include: { event: { select: { name: true, date: true, venue: true, imageUrl: true, mpAccessToken: true } } },
+  });
+  if (!inv || inv.source !== "purchase") {
+    res.status(404).json({ error: "No encontrado" });
+    return;
+  }
+
+  // Ya confirmada previamente (webhook llegó antes)
+  if (inv.status !== "pending_payment") {
+    const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
+    res.json({ id: inv.id, status: inv.status, guestName: inv.guestName, qrDataUrl, event: inv.event });
+    return;
+  }
+
+  const token = inv.event.mpAccessToken;
+  if (!token) {
+    res.status(400).json({ error: "Evento sin configuracion de pago" });
+    return;
+  }
+
+  const payment = await fetchMpPayment(String(paymentId), token);
+  if (!payment || payment.status !== "approved" || payment.external_reference !== req.params.id) {
+    res.status(402).json({ error: "Pago no aprobado o no corresponde a esta entrada" });
+    return;
+  }
+
+  await prisma.invitation.update({ where: { id: req.params.id }, data: { status: "pending" } });
+
+  const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
+  res.json({ id: inv.id, status: "pending", guestName: inv.guestName, qrDataUrl, event: inv.event });
 });
 
 export default router;

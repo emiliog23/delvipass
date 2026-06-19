@@ -53,6 +53,15 @@ export default function BuySuccessPage() {
       return;
     }
 
+    // MP incluye payment_id (o collection_id) en la URL de retorno.
+    // Intentamos confirmar directamente — no dependemos solo del webhook.
+    const paymentId = params.get("payment_id") || params.get("collection_id");
+    if (paymentId) {
+      api.confirmPurchase(invitationId, paymentId)
+        .then(res => { if (mountedRef.current) setData(res); })
+        .catch(() => {}); // si falla, el polling lo resuelve
+    }
+
     async function poll() {
       try {
         const res = await api.getInvitationStatus(invitationId!);
