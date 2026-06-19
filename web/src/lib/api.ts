@@ -138,7 +138,7 @@ export interface Invitation {
   guestName: string;
   guestPhone?: string;
   token: string;
-  status: "pending" | "entered";
+  status: "pending" | "entered" | "pending_payment";
   source: "manual" | "purchase";
   sentVia?: string;
   sentAt?: string;

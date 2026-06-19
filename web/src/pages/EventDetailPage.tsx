@@ -334,6 +334,7 @@ export default function EventDetailPage() {
     );
   }
 
+  const confirmed = invitations.filter(i => i.status !== "pending_payment");
   const entered = invitations.filter(i => i.status === "entered").length;
 
   return (
@@ -398,7 +399,7 @@ export default function EventDetailPage() {
 
       <div style={{ ...s.statsRow, flexDirection: isMobile ? "column" : "row" }}>
         <div style={{ ...s.stat, flex: isMobile ? "none" : 1 }}>
-          <div style={s.statNum}>{invitations.length}</div>
+          <div style={s.statNum}>{confirmed.length}</div>
           <div style={s.statLabel}>Entradas emitidas</div>
         </div>
         <div style={{ ...s.stat, flex: isMobile ? "none" : 1 }}>
@@ -406,7 +407,7 @@ export default function EventDetailPage() {
           <div style={s.statLabel}>Ingresaron</div>
         </div>
         <div style={{ ...s.stat, flex: isMobile ? "none" : 1 }}>
-          <div style={{ ...s.statNum, color: "#facc15" }}>{invitations.length - entered}</div>
+          <div style={{ ...s.statNum, color: "#facc15" }}>{confirmed.length - entered}</div>
           <div style={s.statLabel}>Pendientes</div>
         </div>
       </div>
@@ -467,11 +468,14 @@ export default function EventDetailPage() {
 
         <button
           style={{ ...s.saveBtn, fontSize: 13, padding: "8px 20px" }}
-          disabled={savingPurchase}
-          onClick={() => savePurchaseSettings({
-            ...(mpForm.mpAccessToken ? { mpAccessToken: mpForm.mpAccessToken } : {}),
-            ...(mpForm.price ? { price: parseFloat(mpForm.price) } : {}),
-          })}
+          disabled={savingPurchase || (!mpForm.mpAccessToken && !mpForm.price)}
+          onClick={() => {
+            const patch: { mpAccessToken?: string; price?: number } = {};
+            if (mpForm.mpAccessToken) patch.mpAccessToken = mpForm.mpAccessToken;
+            if (mpForm.price) patch.price = parseFloat(mpForm.price);
+            if (Object.keys(patch).length === 0) return;
+            savePurchaseSettings(patch);
+          }}
         >
           {savingPurchase ? "Guardando..." : "Guardar"}
         </button>
@@ -548,6 +552,10 @@ export default function EventDetailPage() {
                   <span style={{ ...s.statusBadge, background: "#0d1f0d", color: "#4ade80", border: "1px solid #1a4a1a" }}>
                     <CheckCircle size={10} /> Ingreso
                   </span>
+                ) : inv.status === "pending_payment" ? (
+                  <span style={{ ...s.statusBadge, background: "#0d0d1a", color: "#818cf8", border: "1px solid #1e2060" }}>
+                    <Clock size={10} /> Pago pendiente
+                  </span>
                 ) : (
                   <span style={{ ...s.statusBadge, background: "#1a1500", color: "#facc15", border: "1px solid #3a3000" }}>
                     <Clock size={10} /> Pendiente
@@ -586,7 +594,7 @@ export default function EventDetailPage() {
             <tbody>
               {invitations.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ ...s.td, textAlign: "center", color: "#333", padding: 32 }}>
+                  <td colSpan={6} style={{ ...s.td, textAlign: "center", color: "#333", padding: 32 }}>
                     No hay invitados aun
                   </td>
                 </tr>
@@ -601,6 +609,10 @@ export default function EventDetailPage() {
                       {inv.status === "entered" ? (
                         <span style={{ ...s.statusBadge, background: "#0d1f0d", color: "#4ade80", border: "1px solid #1a4a1a" }}>
                           <CheckCircle size={10} /> Ingreso
+                        </span>
+                      ) : inv.status === "pending_payment" ? (
+                        <span style={{ ...s.statusBadge, background: "#0d0d1a", color: "#818cf8", border: "1px solid #1e2060" }}>
+                          <Clock size={10} /> Pago pendiente
                         </span>
                       ) : (
                         <span style={{ ...s.statusBadge, background: "#1a1500", color: "#facc15", border: "1px solid #3a3000" }}>

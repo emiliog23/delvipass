@@ -31,45 +31,53 @@ function badge(ok: boolean): React.CSSProperties {
   };
 }
 
+function isConfirmed(data: InvitationStatus | null) {
+  return !!data && (data.status === "pending" || data.status === "entered");
+}
+
 export default function BuySuccessPage() {
   const [params] = useSearchParams();
   const invitationId = params.get("external_reference");
   const [data, setData] = useState<InvitationStatus | null>(null);
   const [error, setError] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
   const attemptsRef = useRef(0);
+  const mountedRef = useRef(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const MAX_ATTEMPTS = 15;
 
   useEffect(() => {
+    mountedRef.current = true;
+
     if (!invitationId) {
       setError("No se recibio el ID de la reserva.");
       return;
     }
 
-    let timer: ReturnType<typeof setTimeout>;
-
     async function poll() {
       try {
         const res = await api.getInvitationStatus(invitationId!);
+        if (!mountedRef.current) return;
         setData(res);
-        if (res.status === "pending" || res.status === "entered") {
-          setConfirmed(true);
-          return;
-        }
+        if (res.status === "pending" || res.status === "entered") return;
       } catch {
         // ignore poll errors
       }
 
+      if (!mountedRef.current) return;
       attemptsRef.current += 1;
       if (attemptsRef.current >= MAX_ATTEMPTS) {
         setError("El pago esta siendo procesado. Recibiras tu entrada en breve por WhatsApp.");
         return;
       }
-      timer = setTimeout(poll, 2000);
+      timerRef.current = setTimeout(poll, 2000);
     }
 
     poll();
-    return () => clearTimeout(timer);
+
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [invitationId]);
 
   if (error) {
@@ -85,7 +93,7 @@ export default function BuySuccessPage() {
     );
   }
 
-  if (!confirmed || !data) {
+  if (!isConfirmed(data)) {
     return (
       <div style={s.page}>
         <div style={s.card}>
@@ -103,15 +111,15 @@ export default function BuySuccessPage() {
   return (
     <div style={s.page}>
       <div style={s.card}>
-        {data.event.imageUrl && (
-          <img src={resolveImageUrl(data.event.imageUrl)} alt={data.event.name} style={s.img} />
+        {data!.event.imageUrl && (
+          <img src={resolveImageUrl(data!.event.imageUrl)} alt={data!.event.name} style={s.img} />
         )}
         <div style={s.body}>
           <div style={badge(true)}>Pago confirmado</div>
-          {data.qrDataUrl && <img src={data.qrDataUrl} alt="QR" style={s.qrImg} />}
-          <div style={s.name}>{data.guestName}</div>
-          <div style={s.meta}><CalendarDays size={14} /> {formatDate(data.event.date)}</div>
-          <div style={s.meta}><MapPin size={14} /> {data.event.venue}</div>
+          {data!.qrDataUrl && <img src={data!.qrDataUrl} alt="QR" style={s.qrImg} />}
+          <div style={s.name}>{data!.guestName}</div>
+          <div style={s.meta}><CalendarDays size={14} /> {formatDate(data!.event.date)}</div>
+          <div style={s.meta}><MapPin size={14} /> {data!.event.venue}</div>
           <p style={s.hint}>
             Mostra este codigo QR en la puerta del evento.<br />
             Guarda una captura de pantalla para tenerlo offline.
