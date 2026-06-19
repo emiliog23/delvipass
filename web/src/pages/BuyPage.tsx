@@ -31,7 +31,7 @@ export default function BuyPage() {
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [form, setForm] = useState({ guestName: "", guestPhone: "" });
+  const [form, setForm] = useState({ guestName: "", guestEmail: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -46,7 +46,7 @@ export default function BuyPage() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const res = await api.createPurchase(id, form);
+      const res = await api.createPurchase(id, { guestName: form.guestName, guestEmail: form.guestEmail });
       window.location.href = res.checkoutUrl;
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Error al procesar");
@@ -95,11 +95,12 @@ export default function BuyPage() {
                 onChange={e => setForm(f => ({ ...f, guestName: e.target.value }))}
                 placeholder="Tu nombre y apellido"
               />
-              <label style={s.label}>WhatsApp</label>
+              <label style={s.label}>Email</label>
               <input
-                style={s.input} value={form.guestPhone} required
-                onChange={e => setForm(f => ({ ...f, guestPhone: e.target.value }))}
-                placeholder="Ej: 5491112345678"
+                type="email"
+                style={s.input} value={form.guestEmail} required
+                onChange={e => setForm(f => ({ ...f, guestEmail: e.target.value }))}
+                placeholder="tu@email.com"
               />
               {submitError && <div style={s.errorBox}>{submitError}</div>}
               <button style={s.buyBtn} type="submit" disabled={submitting}>

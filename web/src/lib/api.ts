@@ -75,7 +75,7 @@ export const api = {
   // Public purchase
   getPublicEvent: (eventId: string) =>
     req<PublicEvent>(`/public/events/${eventId}`),
-  createPurchase: (eventId: string, data: { guestName: string; guestPhone: string }) =>
+  createPurchase: (eventId: string, data: { guestName: string; guestEmail: string }) =>
     req<PurchaseResult>(`/public/events/${eventId}/purchase`, {
       method: "POST",
       body: JSON.stringify(data),
@@ -133,6 +133,7 @@ export interface InvitationStatus {
   id: string;
   status: string;
   guestName: string;
+  ticketNumber?: number | null;
   qrDataUrl: string | null;
   event: { name: string; date: string; venue: string; imageUrl?: string };
 }

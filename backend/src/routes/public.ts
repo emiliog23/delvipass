@@ -3,6 +3,7 @@ import { z } from "zod";
 import QRCode from "qrcode";
 import prisma from "../lib/prisma";
 import { fetchMpPayment } from "../lib/mercadopago";
+import { sendTicketEmail } from "../lib/email";
 
 const router = Router();
 
@@ -61,7 +62,7 @@ router.get("/events/:id", async (req: Request, res: Response) => {
 
 const purchaseSchema = z.object({
   guestName: z.string().min(2, "Nombre requerido"),
-  guestPhone: z.string().min(6, "Telefono requerido"),
+  guestEmail: z.string().email("Email invalido"),
 });
 
 // Iniciar compra: crea invitation pending_payment + preferencia MP
@@ -87,13 +88,16 @@ router.post("/events/:id/purchase", async (req: Request, res: Response) => {
     return;
   }
 
+  const ticketNumber = (await prisma.invitation.count({ where: { eventId: req.params.id } })) + 1;
+
   const inv = await prisma.invitation.create({
     data: {
       eventId: req.params.id,
       guestName: parsed.data.guestName,
-      guestPhone: parsed.data.guestPhone,
+      guestEmail: parsed.data.guestEmail,
       source: "purchase",
       status: "pending_payment",
+      ticketNumber,
     },
   });
 
@@ -125,6 +129,7 @@ router.get("/invitations/:id", async (req: Request, res: Response) => {
     id: inv.id,
     status: inv.status,
     guestName: inv.guestName,
+    ticketNumber: inv.ticketNumber,
     qrDataUrl,
     event: inv.event,
   });
@@ -169,7 +174,22 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
   await prisma.invitation.update({ where: { id: req.params.id }, data: { status: "pending", confirmedVia: "redirect" } });
 
   const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
-  res.json({ id: inv.id, status: "pending", guestName: inv.guestName, qrDataUrl, event: inv.event });
+  res.json({ id: inv.id, status: "pending", guestName: inv.guestName, ticketNumber: inv.ticketNumber, qrDataUrl, event: inv.event });
+
+  // Enviar entrada por email (no bloquea la respuesta)
+  if (inv.guestEmail && inv.ticketNumber) {
+    const inviteUrl = `${FRONTEND_URL}/invite/${inv.token}`;
+    sendTicketEmail({
+      to: inv.guestEmail,
+      guestName: inv.guestName,
+      eventName: inv.event.name,
+      eventDate: inv.event.date.toISOString(),
+      eventVenue: inv.event.venue,
+      qrDataUrl,
+      ticketNumber: inv.ticketNumber,
+      inviteUrl,
+    }).catch(err => console.error("[sendTicketEmail]", err));
+  }
 });
 
 export default router;

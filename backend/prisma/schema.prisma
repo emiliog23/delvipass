@@ -39,9 +39,10 @@ model Invitation {
   eventId     String
   event       Event     @relation(fields: [eventId], references: [id])
   guestName   String
-  guestEmail  String?
-  guestPhone  String?
-  token       String    @unique @default(uuid())
+  guestEmail   String?
+  guestPhone   String?
+  token        String    @unique @default(uuid())
+  ticketNumber Int?
   status       String    @default("pending")
   source       String    @default("manual")
   confirmedVia String?

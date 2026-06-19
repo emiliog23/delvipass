@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { fetchMpPayment } from "../lib/mercadopago";
+import { sendTicketEmail } from "../lib/email";
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const router = Router();
 
@@ -25,12 +28,10 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
     // Paso 2: buscar invitation y su token de evento
     const inv = await prisma.invitation.findUnique({
       where: { id: initial.external_reference },
-      include: { event: { select: { mpAccessToken: true } } },
+      include: { event: { select: { mpAccessToken: true, name: true, date: true, venue: true } } },
     });
     if (!inv || inv.status !== "pending_payment") return;
 
-    // Paso 3: verificar con el token del evento propietario.
-    // Si el evento no tiene token configurado, rechazar — no hay forma segura de verificar.
     const eventToken = inv.event.mpAccessToken;
     if (!eventToken) return;
 
@@ -41,6 +42,21 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
       where: { id: initial.external_reference },
       data: { status: "pending", confirmedVia: "webhook" },
     });
+
+    if (inv.guestEmail && inv.ticketNumber) {
+      const QRCode = await import("qrcode");
+      const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
+      sendTicketEmail({
+        to: inv.guestEmail,
+        guestName: inv.guestName,
+        eventName: inv.event.name,
+        eventDate: inv.event.date.toISOString(),
+        eventVenue: inv.event.venue,
+        qrDataUrl,
+        ticketNumber: inv.ticketNumber,
+        inviteUrl: `${FRONTEND_URL}/invite/${inv.token}`,
+      }).catch(err => console.error("[sendTicketEmail webhook]", err));
+    }
   } catch {
     // silently ignore — MP ya recibio el 200
   }

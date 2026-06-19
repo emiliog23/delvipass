@@ -127,11 +127,16 @@ export default function BuySuccessPage() {
           <div style={badge(true)}>Pago confirmado</div>
           {data!.qrDataUrl && <img src={data!.qrDataUrl} alt="QR" style={s.qrImg} />}
           <div style={s.name}>{data!.guestName}</div>
+          {data!.ticketNumber && (
+            <div style={{ color: "#555", fontSize: 13, marginBottom: 12, fontWeight: 600 }}>
+              Entrada #{data!.ticketNumber.toString().padStart(4, "0")}
+            </div>
+          )}
           <div style={s.meta}><CalendarDays size={14} /> {formatDate(data!.event.date)}</div>
           <div style={s.meta}><MapPin size={14} /> {data!.event.venue}</div>
           <p style={s.hint}>
-            Mostra este codigo QR en la puerta del evento.<br />
-            Guarda una captura de pantalla para tenerlo offline.
+            Mostrá este código QR en la puerta del evento.<br />
+            Si lo deseás, podés tomar una captura de pantalla para guardarlo en tu celular.
           </p>
         </div>
       </div>

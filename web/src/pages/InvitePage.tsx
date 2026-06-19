@@ -222,6 +222,9 @@ export default function InvitePage() {
                 Para ingresar al evento, mostra este codigo QR en la puerta.
                 La entrada es personal e intransferible.
               </div>
+              <div style={{ ...s.instrText, marginTop: 8, color: "#555" }}>
+                Si lo deseas, podes tomar una captura de pantalla para guardarla en tu celular.
+              </div>
             </div>
           )}
         </div>
