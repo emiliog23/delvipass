@@ -26,9 +26,11 @@ model Event {
   date        DateTime
   venue       String
   capacity    Int?
-  imageUrl    String?
-  createdAt   DateTime     @default(now())
-  invitations Invitation[]
+  imageUrl        String?
+  purchaseEnabled Boolean      @default(false)
+  mercadoPagoLink String?
+  createdAt       DateTime     @default(now())
+  invitations     Invitation[]
 }
 
 model Invitation {
@@ -40,6 +42,7 @@ model Invitation {
   guestPhone  String?
   token       String    @unique @default(uuid())
   status      String    @default("pending")
+  source      String    @default("manual")
   sentVia     String?
   sentAt      DateTime?
   enteredAt   DateTime?

@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth";
 import eventRoutes from "./routes/events";
 import invitationRoutes from "./routes/invitations";
+import publicRoutes from "./routes/public";
 import { uploadDir } from "./lib/upload";
 
 const app = express();
@@ -17,6 +18,7 @@ app.use("/uploads/events", express.static(uploadDir));
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/invitations", invitationRoutes);
+app.use("/api/public", publicRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true, version: "1.0.0" }));
 

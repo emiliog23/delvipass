@@ -15,6 +15,8 @@ const eventSchema = z.object({
   date: z.string().datetime(),
   venue: z.string().min(2),
   capacity: z.number().int().positive().optional(),
+  purchaseEnabled: z.boolean().optional(),
+  mercadoPagoLink: z.string().url().optional().or(z.literal("")),
 });
 
 router.get("/", async (req: AuthRequest, res: Response) => {

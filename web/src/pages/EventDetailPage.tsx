@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   ArrowLeft, Plus, MessageCircle, CheckCircle, Clock,
-  Trash2, ExternalLink, Users, CalendarDays, MapPin, ImagePlus,
+  Trash2, ExternalLink, Users, CalendarDays, MapPin, ImagePlus, ShoppingCart,
 } from "lucide-react";
 import { api, Event, Invitation, resolveImageUrl } from "../lib/api";
 import Layout from "../components/Layout";
@@ -81,6 +81,13 @@ const s: Record<string, React.CSSProperties> = {
   },
   statNum: { fontSize: 26, fontWeight: 700, color: "#f0f0f0" },
   statLabel: { fontSize: 12, color: "#555", marginTop: 2 },
+  purchaseCard: { background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "18px 22px", marginBottom: 24 },
+  purchaseRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  purchaseTitle: { fontSize: 15, fontWeight: 700, color: "#ccc", display: "flex", alignItems: "center", gap: 8 },
+  toggle: { position: "relative" as const, display: "inline-block", width: 44, height: 24, cursor: "pointer" },
+  toggleInput: { opacity: 0, width: 0, height: 0, position: "absolute" as const },
+  purchaseUrl: { background: "#111", border: "1px solid #2a2a2a", borderRadius: 7, padding: "8px 12px", fontSize: 12, color: "#888", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 12 },
+  copyBtn: { background: "none", border: "none", color: "#7c3aed", cursor: "pointer", fontSize: 12, fontWeight: 700, padding: 0 },
   sectionHeader: {
     display: "flex",
     justifyContent: "space-between",
@@ -206,6 +213,7 @@ export default function EventDetailPage() {
   const [formData, setFormData] = useState({ guestName: "", guestPhone: "" });
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [savingPurchase, setSavingPurchase] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -276,6 +284,20 @@ export default function EventDetailPage() {
       toast.success("Entrada eliminada");
     } catch {
       toast.error("Error al eliminar");
+    }
+  }
+
+  async function savePurchaseSettings(patch: { purchaseEnabled?: boolean; mercadoPagoLink?: string }) {
+    if (!id || !event) return;
+    setSavingPurchase(true);
+    try {
+      const updated = await api.updateEvent(id, { ...patch });
+      setEvent(updated);
+      toast.success("Configuracion guardada");
+    } catch {
+      toast.error("Error al guardar");
+    } finally {
+      setSavingPurchase(false);
     }
   }
 
@@ -387,6 +409,66 @@ export default function EventDetailPage() {
         </div>
       </div>
 
+      {/* Compra online */}
+      <div style={s.purchaseCard}>
+        <div style={s.purchaseRow}>
+          <div style={s.purchaseTitle}>
+            <ShoppingCart size={16} /> Compra online
+          </div>
+          <label style={s.toggle}>
+            <input
+              type="checkbox"
+              style={s.toggleInput}
+              checked={!!event.purchaseEnabled}
+              onChange={e => savePurchaseSettings({ purchaseEnabled: e.target.checked })}
+              disabled={savingPurchase}
+            />
+            <span style={{
+              display: "block", width: 44, height: 24, borderRadius: 12,
+              background: event.purchaseEnabled ? "#7c3aed" : "#2a2a2a",
+              transition: "background 0.2s", position: "relative" as const,
+            }}>
+              <span style={{
+                position: "absolute" as const, top: 3, left: event.purchaseEnabled ? 22 : 3,
+                width: 18, height: 18, borderRadius: "50%", background: "white",
+                transition: "left 0.2s",
+              }} />
+            </span>
+          </label>
+        </div>
+
+        <div>
+          <label style={{ ...s.label, marginBottom: 6 }}>Link de MercadoPago</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              style={{ ...s.input, marginBottom: 0, flex: 1 }}
+              value={event.mercadoPagoLink ?? ""}
+              onChange={e => setEvent(ev => ev ? { ...ev, mercadoPagoLink: e.target.value } : ev)}
+              onBlur={e => savePurchaseSettings({ mercadoPagoLink: e.target.value })}
+              placeholder="https://mpago.la/..."
+              disabled={savingPurchase}
+            />
+          </div>
+        </div>
+
+        {event.purchaseEnabled && event.mercadoPagoLink && (
+          <div style={s.purchaseUrl}>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+              {window.location.origin}/buy/{event.id}
+            </span>
+            <button
+              style={s.copyBtn}
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/buy/${event.id}`);
+                toast.success("Link copiado");
+              }}
+            >
+              Copiar
+            </button>
+          </div>
+        )}
+      </div>
+
       <div style={s.sectionHeader}>
         <div style={s.sectionTitle}>Lista de invitados</div>
         <button style={s.addBtn} onClick={() => setShowForm(v => !v)}>
@@ -471,6 +553,7 @@ export default function EventDetailPage() {
                 <th style={s.th}>Nombre</th>
                 <th style={s.th}>Telefono</th>
                 <th style={s.th}>Estado</th>
+                <th style={s.th}>Origen</th>
                 <th style={s.th}>Envio</th>
                 <th style={s.th}>Acciones</th>
               </tr>
@@ -499,6 +582,11 @@ export default function EventDetailPage() {
                           <Clock size={10} /> Pendiente
                         </span>
                       )}
+                    </td>
+                    <td style={{ ...s.td, fontSize: 11 }}>
+                      {inv.source === "purchase"
+                        ? <span style={{ color: "#009ee3", fontWeight: 700 }}>Compra</span>
+                        : <span style={{ color: "#555" }}>Manual</span>}
                     </td>
                     <td style={{ ...s.td, color: "#555", fontSize: 12 }}>{inv.sentAt ? "Enviado" : "—"}</td>
                     <td style={s.td}>

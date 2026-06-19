@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import NewEventPage from "./pages/NewEventPage";
 import InvitePage from "./pages/InvitePage";
+import BuyPage from "./pages/BuyPage";
 import { getSession } from "./lib/auth";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
+        <Route path="/buy/:id" element={<BuyPage />} />
         <Route path="/" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
         <Route path="/events/new" element={<PrivateRoute><NewEventPage /></PrivateRoute>} />
         <Route path="/events/:id" element={<PrivateRoute><EventDetailPage /></PrivateRoute>} />

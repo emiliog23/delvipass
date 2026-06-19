@@ -68,9 +68,18 @@ export const api = {
   getWhatsAppLink: (eventId: string, invId: string) =>
     req<{ ok: boolean; waLink: string }>(`/invitations/events/${eventId}/invitations/${invId}/whatsapp-link`, { method: "POST" }),
 
-  // Public
+  // Public invitation
   getPublicInvitation: (token: string) =>
     req<PublicInvitation>(`/invitations/public/${token}`),
+
+  // Public purchase
+  getPublicEvent: (eventId: string) =>
+    req<PublicEvent>(`/public/events/${eventId}`),
+  createPurchase: (eventId: string, data: { guestName: string; guestPhone: string }) =>
+    req<PurchaseResult>(`/public/events/${eventId}/purchase`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 export interface User {
@@ -88,8 +97,31 @@ export interface Event {
   venue: string;
   capacity?: number;
   imageUrl?: string;
+  purchaseEnabled?: boolean;
+  mercadoPagoLink?: string;
   createdAt: string;
   _count?: { invitations: number };
+}
+
+export interface PublicEvent {
+  id: string;
+  name: string;
+  description?: string;
+  date: string;
+  venue: string;
+  imageUrl?: string;
+  capacity?: number;
+  purchaseEnabled: boolean;
+  mercadoPagoLink?: string;
+  _count: { invitations: number };
+}
+
+export interface PurchaseResult {
+  id: string;
+  token: string;
+  guestName: string;
+  qrDataUrl: string;
+  mercadoPagoLink: string;
 }
 
 export interface Invitation {
@@ -99,6 +131,7 @@ export interface Invitation {
   guestPhone?: string;
   token: string;
   status: "pending" | "entered";
+  source: "manual" | "purchase";
   sentVia?: string;
   sentAt?: string;
   enteredAt?: string;
