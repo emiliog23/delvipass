@@ -147,6 +147,9 @@ export default function BuySuccessPage() {
             Mostrá este código QR en la puerta del evento.<br />
             Si lo deseás, podés tomar una captura de pantalla para guardarlo en tu celular.
           </p>
+          <p style={{ ...s.hint, marginTop: 12, color: "#4ade80", fontWeight: 600 }}>
+            Te enviamos tu entrada por mail.
+          </p>
         </div>
       </div>
     </div>
