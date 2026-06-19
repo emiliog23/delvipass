@@ -43,6 +43,7 @@ export default function BuySuccessPage() {
   const attemptsRef = useRef(0);
   const mountedRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confirmedRef = useRef(false);
   const MAX_ATTEMPTS = 15;
 
   useEffect(() => {
@@ -53,21 +54,29 @@ export default function BuySuccessPage() {
       return;
     }
 
-    // MP incluye payment_id (o collection_id) en la URL de retorno.
-    // Intentamos confirmar directamente — no dependemos solo del webhook.
     const paymentId = params.get("payment_id") || params.get("collection_id");
     if (paymentId) {
       api.confirmPurchase(invitationId, paymentId)
-        .then(res => { if (mountedRef.current) setData(res); })
-        .catch(() => {}); // si falla, el polling lo resuelve
+        .then(res => {
+          if (!mountedRef.current) return;
+          setData(res);
+          if (res.status === "pending" || res.status === "entered") {
+            confirmedRef.current = true; // detiene el poll
+          }
+        })
+        .catch(() => {});
     }
 
     async function poll() {
+      if (confirmedRef.current || !mountedRef.current) return;
       try {
         const res = await api.getInvitationStatus(invitationId!);
         if (!mountedRef.current) return;
         setData(res);
-        if (res.status === "pending" || res.status === "entered") return;
+        if (res.status === "pending" || res.status === "entered") {
+          confirmedRef.current = true;
+          return;
+        }
       } catch {
         // ignore poll errors
       }
@@ -75,7 +84,7 @@ export default function BuySuccessPage() {
       if (!mountedRef.current) return;
       attemptsRef.current += 1;
       if (attemptsRef.current >= MAX_ATTEMPTS) {
-        setError("El pago esta siendo procesado. Recibiras tu entrada en breve por WhatsApp.");
+        setError("El pago esta siendo procesado. Recibiras tu entrada en breve por email.");
         return;
       }
       timerRef.current = setTimeout(poll, 2000);

@@ -78,7 +78,11 @@ router.post("/events/:id/purchase", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Compra no disponible para este evento" });
     return;
   }
-  if (event.capacity && event._count.invitations >= event.capacity) {
+  // Excluir pending_payment del conteo — compras abandonadas no deben bloquear nuevas ventas
+  const activeCount = await prisma.invitation.count({
+    where: { eventId: req.params.id, status: { not: "pending_payment" } },
+  });
+  if (event.capacity && activeCount >= event.capacity) {
     res.status(400).json({ error: "No hay entradas disponibles" });
     return;
   }
@@ -88,7 +92,7 @@ router.post("/events/:id/purchase", async (req: Request, res: Response) => {
     return;
   }
 
-  const ticketNumber = (await prisma.invitation.count({ where: { eventId: req.params.id } })) + 1;
+  const ticketNumber = activeCount + 1;
 
   const inv = await prisma.invitation.create({
     data: {
@@ -152,10 +156,11 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
     return;
   }
 
-  // Ya confirmada previamente (webhook llegó antes)
+  const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
+
+  // Ya confirmada previamente (webhook llegó antes) — fix A4: incluye ticketNumber
   if (inv.status !== "pending_payment") {
-    const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
-    res.json({ id: inv.id, status: inv.status, guestName: inv.guestName, qrDataUrl, event: inv.event });
+    res.json({ id: inv.id, status: inv.status, guestName: inv.guestName, ticketNumber: inv.ticketNumber, qrDataUrl, event: inv.event });
     return;
   }
 
@@ -171,14 +176,15 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
     return;
   }
 
-  await prisma.invitation.update({ where: { id: req.params.id }, data: { status: "pending", confirmedVia: "redirect" } });
+  // updateMany con condición de status — fix A3: solo el primer llamado (redirect o webhook) envía el email
+  const updated = await prisma.invitation.updateMany({
+    where: { id: req.params.id, status: "pending_payment" },
+    data: { status: "pending", confirmedVia: "redirect" },
+  });
 
-  const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
   res.json({ id: inv.id, status: "pending", guestName: inv.guestName, ticketNumber: inv.ticketNumber, qrDataUrl, event: inv.event });
 
-  // Enviar entrada por email (no bloquea la respuesta)
-  if (inv.guestEmail && inv.ticketNumber) {
-    const inviteUrl = `${FRONTEND_URL}/invite/${inv.token}`;
+  if (updated.count > 0 && inv.guestEmail && inv.ticketNumber) {
     sendTicketEmail({
       to: inv.guestEmail,
       guestName: inv.guestName,
@@ -187,7 +193,7 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
       eventVenue: inv.event.venue,
       qrDataUrl,
       ticketNumber: inv.ticketNumber,
-      inviteUrl,
+      inviteUrl: `${FRONTEND_URL}/invite/${inv.token}`,
     }).catch(err => console.error("[sendTicketEmail]", err));
   }
 });

@@ -38,12 +38,12 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
     const verified = await fetchMpPayment(paymentId, eventToken);
     if (!verified || verified.status !== "approved") return;
 
-    await prisma.invitation.update({
-      where: { id: initial.external_reference },
+    const updated = await prisma.invitation.updateMany({
+      where: { id: initial.external_reference, status: "pending_payment" },
       data: { status: "pending", confirmedVia: "webhook" },
     });
 
-    if (inv.guestEmail && inv.ticketNumber) {
+    if (updated.count > 0 && inv.guestEmail && inv.ticketNumber) {
       const QRCode = await import("qrcode");
       const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
       sendTicketEmail({
