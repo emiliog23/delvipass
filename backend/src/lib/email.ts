@@ -81,13 +81,14 @@ interface TicketEmailData {
   eventName: string;
   eventDate: string;
   eventVenue: string;
+  eventImageUrl?: string | null;
   qrDataUrl: string;
   ticketNumber: number;
   inviteUrl: string;
 }
 
 export async function sendTicketEmail(data: TicketEmailData) {
-  const { to, guestName, eventName, eventDate, eventVenue, qrDataUrl, ticketNumber, inviteUrl } = data;
+  const { to, guestName, eventName, eventDate, eventVenue, eventImageUrl, qrDataUrl, ticketNumber, inviteUrl } = data;
 
   const dateStr = new Date(eventDate).toLocaleDateString("es-AR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -95,49 +96,126 @@ export async function sendTicketEmail(data: TicketEmailData) {
   });
   const code = `#${ticketNumber.toString().padStart(4, "0")}`;
 
+  const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
+  const imageAbsoluteUrl = eventImageUrl
+    ? (eventImageUrl.startsWith("http") ? eventImageUrl : `${BACKEND_URL}${eventImageUrl}`)
+    : null;
+
+  const headerHtml = imageAbsoluteUrl
+    ? `<tr>
+        <td style="padding:0;line-height:0;">
+          <img src="${imageAbsoluteUrl}" width="520" alt="${eventName}"
+               style="display:block;width:100%;max-width:520px;height:auto;border:0;">
+        </td>
+       </tr>
+       <tr>
+        <td style="background:#111111;border-bottom:1px solid #2a2a2a;padding:16px 24px 20px;text-align:center;">
+          <p style="margin:0 0 6px;color:#888888;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Entrada</p>
+          <p style="margin:0;color:#f0f0f0;font-size:20px;font-weight:700;">${eventName}</p>
+        </td>
+       </tr>`
+    : `<tr>
+        <td style="background:#111111;border-bottom:1px solid #2a2a2a;padding:28px 24px 22px;text-align:center;">
+          <p style="margin:0 0 4px;color:#444444;font-size:22px;">&#127915;</p>
+          <p style="margin:0 0 6px;color:#888888;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">Entrada</p>
+          <p style="margin:0;color:#f0f0f0;font-size:20px;font-weight:700;">${eventName}</p>
+        </td>
+       </tr>`;
+
   const html = `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+</head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:32px 16px;">
   <tr><td align="center">
-    <table width="100%" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="max-width:480px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;">
+
+      ${headerHtml}
+
+      <!-- Body -->
+      <tr><td style="padding:28px 28px 10px;">
+
+        <!-- Guest name -->
+        <p style="margin:0 0 20px;color:#ffffff;font-size:22px;font-weight:700;text-align:center;">${guestName}</p>
+        <p style="margin:0 0 4px;color:#aaaaaa;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-align:center;">${code}</p>
+
+        <!-- Date & Venue -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+          <tr>
+            <td width="20" valign="top" style="padding-top:2px;">
+              <span style="color:#555555;font-size:14px;">&#128197;</span>
+            </td>
+            <td style="color:#aaaaaa;font-size:14px;padding-left:8px;">${dateStr}</td>
+          </tr>
+          <tr><td colspan="2" style="padding:4px 0;"></td></tr>
+          <tr>
+            <td width="20" valign="top" style="padding-top:2px;">
+              <span style="color:#555555;font-size:14px;">&#128205;</span>
+            </td>
+            <td style="color:#aaaaaa;font-size:14px;padding-left:8px;">${eventVenue}</td>
+          </tr>
+        </table>
+
+        <!-- Divider -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0;">
+          <tr><td style="background:#2a2a2a;height:1px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        </table>
+
+        <!-- QR section -->
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="background:#111111;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="padding:16px 0 0;text-align:center;">
+              <p style="margin:0 0 12px;color:#555555;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Codigo QR de acceso</p>
+              <img src="${qrDataUrl}" width="220" height="220"
+                   style="display:block;margin:0 auto 16px;border-radius:8px;"
+                   alt="Codigo QR">
+            </td>
+          </tr>
+        </table>
+
+        <!-- Instructions -->
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="background:#111111;border:1px solid #2a2a2a;border-radius:10px;margin-top:18px;overflow:hidden;">
+          <tr>
+            <td style="padding:16px;">
+              <p style="margin:0 0 6px;color:#999999;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Instrucciones de acceso</p>
+              <p style="margin:0 0 8px;color:#777777;font-size:14px;line-height:1.6;">
+                Para ingresar al evento, mostra este codigo QR en la puerta. La entrada es personal e intransferible.
+              </p>
+              <p style="margin:0;color:#555555;font-size:13px;line-height:1.6;">
+                Si lo deseas, podes tomar una captura de pantalla para guardarla en tu celular.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- CTA -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+          <tr>
+            <td align="center">
+              <a href="${inviteUrl}"
+                 style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;">
+                Ver entrada online
+              </a>
+            </td>
+          </tr>
+        </table>
+
+      </td></tr>
+
+      <!-- Footer -->
       <tr>
-        <td style="background:#7c3aed;padding:28px 24px;text-align:center;">
-          <p style="margin:0;color:#e9d5ff;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Entrada confirmada</p>
-          <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:800;">${eventName}</h1>
+        <td style="background:#111111;border-top:1px solid #2a2a2a;padding:16px 24px;text-align:center;">
+          <p style="margin:0;color:#444444;font-size:11px;">Esta entrada es personal e intransferible.</p>
         </td>
       </tr>
-      <tr>
-        <td style="padding:28px 24px;text-align:center;">
-          <p style="margin:0 0 4px;color:#666;font-size:13px;">${dateStr}</p>
-          <p style="margin:0 0 20px;color:#666;font-size:13px;">${eventVenue}</p>
 
-          <p style="margin:0 0 2px;color:#999;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Titular</p>
-          <p style="margin:0 0 4px;color:#111;font-size:20px;font-weight:700;">${guestName}</p>
-          <p style="margin:0 0 24px;color:#aaa;font-size:13px;font-weight:600;">${code}</p>
-
-          <img src="${qrDataUrl}" width="220" height="220"
-               style="display:block;margin:0 auto 20px;border-radius:12px;border:1px solid #e5e7eb;"
-               alt="Codigo QR de entrada">
-
-          <p style="margin:0 0 8px;color:#555;font-size:13px;line-height:1.6;">
-            Mostrá este código QR en la puerta del evento.
-          </p>
-          <p style="margin:0 0 24px;color:#555;font-size:13px;line-height:1.6;">
-            Si lo deseás, podés tomar una captura de pantalla para guardarlo en tu celular.
-          </p>
-
-          <a href="${inviteUrl}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;">
-            Ver entrada online
-          </a>
-        </td>
-      </tr>
-      <tr>
-        <td style="background:#f9fafb;padding:16px 24px;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;color:#aaa;font-size:11px;">Esta entrada es personal e intransferible.</p>
-        </td>
-      </tr>
     </table>
   </td></tr>
 </table>

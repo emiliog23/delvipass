@@ -28,7 +28,7 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
     // Paso 2: buscar invitation y su token de evento
     const inv = await prisma.invitation.findUnique({
       where: { id: initial.external_reference },
-      include: { event: { select: { mpAccessToken: true, name: true, date: true, venue: true } } },
+      include: { event: { select: { mpAccessToken: true, name: true, date: true, venue: true, imageUrl: true } } },
     });
     if (!inv || inv.status !== "pending_payment") return;
 
@@ -52,6 +52,7 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
         eventName: inv.event.name,
         eventDate: inv.event.date.toISOString(),
         eventVenue: inv.event.venue,
+        eventImageUrl: inv.event.imageUrl,
         qrDataUrl,
         ticketNumber: inv.ticketNumber,
         inviteUrl: `${FRONTEND_URL}/invite/${inv.token}`,

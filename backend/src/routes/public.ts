@@ -191,6 +191,7 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
       eventName: inv.event.name,
       eventDate: inv.event.date.toISOString(),
       eventVenue: inv.event.venue,
+      eventImageUrl: inv.event.imageUrl,
       qrDataUrl,
       ticketNumber: inv.ticketNumber,
       inviteUrl: `${FRONTEND_URL}/invite/${inv.token}`,
