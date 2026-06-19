@@ -42,8 +42,9 @@ model Invitation {
   guestEmail  String?
   guestPhone  String?
   token       String    @unique @default(uuid())
-  status      String    @default("pending")
-  source      String    @default("manual")
+  status       String    @default("pending")
+  source       String    @default("manual")
+  confirmedVia String?
   sentVia     String?
   sentAt      DateTime?
   enteredAt   DateTime?

@@ -145,6 +145,7 @@ export interface Invitation {
   token: string;
   status: "pending" | "entered" | "pending_payment";
   source: "manual" | "purchase";
+  confirmedVia?: "webhook" | "redirect" | null;
   sentVia?: string;
   sentAt?: string;
   enteredAt?: string;

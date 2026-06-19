@@ -166,7 +166,7 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
     return;
   }
 
-  await prisma.invitation.update({ where: { id: req.params.id }, data: { status: "pending" } });
+  await prisma.invitation.update({ where: { id: req.params.id }, data: { status: "pending", confirmedVia: "redirect" } });
 
   const qrDataUrl = await QRCode.toDataURL(inv.token, { width: 300, margin: 2 });
   res.json({ id: inv.id, status: "pending", guestName: inv.guestName, qrDataUrl, event: inv.event });

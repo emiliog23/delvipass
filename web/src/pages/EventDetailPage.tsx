@@ -562,7 +562,12 @@ export default function EventDetailPage() {
                   </span>
                 )}
               </div>
-              {inv.guestPhone && <div style={{ color: "#555", fontSize: 12, marginBottom: 10 }}>{inv.guestPhone}</div>}
+              {inv.guestPhone && <div style={{ color: "#555", fontSize: 12, marginBottom: 4 }}>{inv.guestPhone}</div>}
+              {inv.source === "purchase" && (
+                <div style={{ color: "#444", fontSize: 11, marginBottom: 10 }}>
+                  Compra{inv.confirmedVia ? ` · via ${inv.confirmedVia === "webhook" ? "webhook MP" : "redirect"}` : " · pago pendiente"}
+                </div>
+              )}
               <div style={s.actions}>
                 <a href={`/invite/${inv.token}`} target="_blank" rel="noreferrer"
                   style={{ ...s.actionBtn, background: "#1e1228", color: "#9d6fe8", textDecoration: "none" }}>
@@ -621,9 +626,18 @@ export default function EventDetailPage() {
                       )}
                     </td>
                     <td style={{ ...s.td, fontSize: 11 }}>
-                      {inv.source === "purchase"
-                        ? <span style={{ color: "#009ee3", fontWeight: 700 }}>Compra</span>
-                        : <span style={{ color: "#555" }}>Manual</span>}
+                      {inv.source === "purchase" ? (
+                        <div>
+                          <span style={{ color: "#009ee3", fontWeight: 700 }}>Compra</span>
+                          {inv.confirmedVia && (
+                            <div style={{ color: "#444", fontSize: 10, marginTop: 2 }}>
+                              via {inv.confirmedVia === "webhook" ? "webhook MP" : "redirect"}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ color: "#555" }}>Manual</span>
+                      )}
                     </td>
                     <td style={{ ...s.td, color: "#555", fontSize: 12 }}>{inv.sentAt ? "Enviado" : "—"}</td>
                     <td style={s.td}>

@@ -39,7 +39,7 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
 
     await prisma.invitation.update({
       where: { id: initial.external_reference },
-      data: { status: "pending" },
+      data: { status: "pending", confirmedVia: "webhook" },
     });
   } catch {
     // silently ignore — MP ya recibio el 200
