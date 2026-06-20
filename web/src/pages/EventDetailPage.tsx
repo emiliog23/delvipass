@@ -499,9 +499,9 @@ export default function EventDetailPage() {
       </div>
 
       <div style={s.sectionHeader}>
-        <div style={s.sectionTitle}>Lista de invitados</div>
+        <div style={s.sectionTitle}>Lista de asistentes</div>
         <button style={s.addBtn} onClick={() => setShowForm(v => !v)}>
-          <Plus size={14} /> Agregar invitado
+          <Plus size={14} /> Agregar asistente
         </button>
       </div>
 
@@ -516,7 +516,7 @@ export default function EventDetailPage() {
                 onChange={e => setFormData(f => ({ ...f, guestName: e.target.value }))}
                 required
                 autoFocus
-                placeholder="Nombre del invitado"
+                placeholder="Nombre del asistente"
               />
             </div>
             <div>
@@ -542,7 +542,7 @@ export default function EventDetailPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {invitations.length === 0 ? (
             <div style={{ textAlign: "center", color: "#333", padding: 32, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10 }}>
-              No hay invitados aun
+              No hay asistentes aun
             </div>
           ) : invitations.map(inv => (
             <div key={inv.id} style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "14px 16px" }}>
@@ -600,7 +600,7 @@ export default function EventDetailPage() {
               {invitations.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ ...s.td, textAlign: "center", color: "#333", padding: 32 }}>
-                    No hay invitados aun
+                    No hay asistentes aun
                   </td>
                 </tr>
               ) : (
