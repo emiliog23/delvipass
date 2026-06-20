@@ -16,30 +16,28 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
   try {
     const paymentId = String(data.id);
 
-    // Paso 1: fetch inicial para obtener external_reference.
-    // Usamos el token global como primer intento; si no está configurado
-    // no podemos continuar sin saber el evento.
-    const initialToken = process.env.MP_ACCESS_TOKEN;
-    if (!initialToken) return;
+    // El eventId viene en la notification_url que seteamos al crear la preferencia.
+    // Esto elimina la dependencia del token global MP_ACCESS_TOKEN.
+    const eventId = req.query.eventId as string | undefined;
+    if (!eventId) return;
 
-    const initial = await fetchMpPayment(paymentId, initialToken);
-    if (!initial || initial.status !== "approved" || !initial.external_reference) return;
-
-    // Paso 2: buscar invitation y su token de evento
-    const inv = await prisma.invitation.findUnique({
-      where: { id: initial.external_reference },
-      include: { event: { select: { mpAccessToken: true, name: true, date: true, venue: true, imageUrl: true } } },
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { mpAccessToken: true, name: true, date: true, venue: true, imageUrl: true },
     });
-    if (!inv || inv.status !== "pending_payment") return;
+    if (!event?.mpAccessToken) return;
 
-    const eventToken = inv.event.mpAccessToken;
-    if (!eventToken) return;
+    // Verificar el pago usando el token del evento (cuenta MP del organizador)
+    const payment = await fetchMpPayment(paymentId, event.mpAccessToken);
+    if (!payment || payment.status !== "approved" || !payment.external_reference) return;
 
-    const verified = await fetchMpPayment(paymentId, eventToken);
-    if (!verified || verified.status !== "approved") return;
+    const inv = await prisma.invitation.findUnique({
+      where: { id: payment.external_reference },
+    });
+    if (!inv || inv.status !== "pending_payment" || inv.eventId !== eventId) return;
 
     const updated = await prisma.invitation.updateMany({
-      where: { id: initial.external_reference, status: "pending_payment" },
+      where: { id: payment.external_reference, status: "pending_payment" },
       data: { status: "pending", confirmedVia: "webhook" },
     });
 
@@ -49,10 +47,10 @@ router.post("/mercadopago", async (req: Request, res: Response) => {
       sendTicketEmail({
         to: inv.guestEmail,
         guestName: inv.guestName,
-        eventName: inv.event.name,
-        eventDate: inv.event.date.toISOString(),
-        eventVenue: inv.event.venue,
-        eventImageUrl: inv.event.imageUrl,
+        eventName: event.name,
+        eventDate: event.date.toISOString(),
+        eventVenue: event.venue,
+        eventImageUrl: event.imageUrl,
         qrDataUrl,
         ticketNumber: inv.ticketNumber,
         inviteUrl: `${FRONTEND_URL}/invite/${inv.token}`,

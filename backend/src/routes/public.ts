@@ -16,7 +16,8 @@ async function createMpPreference(
   eventName: string,
   price: number,
   guestName: string,
-  invitationId: string
+  invitationId: string,
+  eventId: string
 ) {
   const res = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
@@ -34,7 +35,8 @@ async function createMpPreference(
         pending: `${FRONTEND_URL}/buy/pending`,
       },
       auto_return: "approved",
-      notification_url: `${BACKEND_URL}/api/webhooks/mercadopago`,
+      // eventId en la URL → webhook sabe qué token MP usar sin variable global
+      notification_url: `${BACKEND_URL}/api/webhooks/mercadopago?eventId=${eventId}`,
     }),
   });
   if (!res.ok) {
@@ -111,7 +113,7 @@ router.post("/events/:id/purchase", asyncHandler(async (req: Request, res: Respo
 
   try {
     const pref = await createMpPreference(
-      event.mpAccessToken, event.name, event.price, parsed.data.guestName, inv.id
+      event.mpAccessToken, event.name, event.price, parsed.data.guestName, inv.id, event.id
     );
     res.status(201).json({ invitationId: inv.id, checkoutUrl: pref.init_point });
   } catch (err: unknown) {
