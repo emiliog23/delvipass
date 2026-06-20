@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { Users, Calendar, Ticket, Mail, ShoppingCart, Webhook } from "lucide-react";
 import { api } from "../lib/api";
@@ -43,6 +43,7 @@ function StatCard({ value, label, icon, color }: { value: number | string; label
 export default function SuperadminPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [reconciling, setReconciling] = useState(false);
 
   async function load() {
     try {
@@ -65,6 +66,16 @@ export default function SuperadminPage() {
     } catch { toast.error("Error"); }
   }
 
+  async function reconcile() {
+    setReconciling(true);
+    try {
+      const r = await api.reconcilePayments();
+      toast.success(`Revisados: ${r.checked} | Activados: ${r.activated} | Fallidos: ${r.failed}`);
+      if (r.activated > 0) load();
+    } catch { toast.error("Error en reconciliación"); }
+    finally { setReconciling(false); }
+  }
+
   async function demote(id: string) {
     try {
       await api.demoteUser(id);
@@ -77,7 +88,16 @@ export default function SuperadminPage() {
 
   return (
     <Layout>
-      <div style={s.title}>Superadmin</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+        <div style={s.title}>Superadmin</div>
+        <button
+          style={{ ...s.actionBtn, padding: "7px 16px", fontSize: 12, color: "#facc15", borderColor: "#3a3000" }}
+          onClick={reconcile}
+          disabled={reconciling}
+        >
+          {reconciling ? "Verificando..." : "Reconciliar pagos pendientes"}
+        </button>
+      </div>
       <div style={s.subtitle}>Panel de administración global del sistema</div>
 
       {/* Stats grid */}

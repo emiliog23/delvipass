@@ -72,6 +72,7 @@ export const api = {
   getSuperadminStats: () => req<any>("/superadmin/stats"),
   promoteUser: (id: string) => req<any>(`/superadmin/users/${id}/promote`, { method: "POST" }),
   demoteUser: (id: string) => req<any>(`/superadmin/users/${id}/demote`, { method: "POST" }),
+  reconcilePayments: () => req<{ checked: number; activated: number; failed: number }>("/superadmin/reconcile", { method: "POST" }),
 
   // Public invitation
   getPublicInvitation: (token: string) =>
