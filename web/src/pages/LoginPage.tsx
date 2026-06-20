@@ -106,6 +106,11 @@ export default function LoginPage() {
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
+        <div style={{ textAlign: "center", marginTop: 14 }}>
+          <Link to="/forgot-password" style={{ ...s.a, fontSize: 13 }}>
+            Olvidé mi contraseña
+          </Link>
+        </div>
         <div style={s.link}>
           No tenes cuenta?{" "}
           <Link to="/register" style={s.a}>

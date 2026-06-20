@@ -34,6 +34,10 @@ export const api = {
     req<{ token: string; user: User }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
   register: (data: { email: string; username: string; password: string; name: string }) =>
     req<{ token: string; user: User }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
+  forgotPassword: (email: string) =>
+    req<{ ok: boolean }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) =>
+    req<{ ok: boolean }>("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
 
   // Events
   getEvents: () => req<Event[]>("/events"),

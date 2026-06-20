@@ -10,6 +10,8 @@ import NewEventPage from "./pages/NewEventPage";
 import InvitePage from "./pages/InvitePage";
 import BuyPage from "./pages/BuyPage";
 import BuySuccessPage from "./pages/BuySuccessPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SuperadminPage from "./pages/SuperadminPage";
 import { getSession, isSuperadmin } from "./lib/auth";
 
@@ -30,6 +32,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/invite/:token" element={<InvitePage />} />
         <Route path="/buy/success" element={<BuySuccessPage />} />
         <Route path="/buy/:id" element={<BuyPage />} />

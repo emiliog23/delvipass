@@ -244,3 +244,59 @@ export async function sendTicketEmail(data: TicketEmailData) {
     ],
   });
 }
+
+export async function sendPasswordResetEmail(to: string, resetUrl: string) {
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="max-width:480px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;overflow:hidden;">
+      <tr>
+        <td style="background:#111111;padding:28px 24px 22px;text-align:center;border-bottom:1px solid #2a2a2a;">
+          <p style="margin:0 0 6px;color:#888888;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">delvipass</p>
+          <h1 style="margin:0;color:#f0f0f0;font-size:20px;font-weight:700;">Recuperar contraseña</h1>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:28px 24px;">
+          <p style="margin:0 0 20px;color:#aaaaaa;font-size:14px;line-height:1.6;">
+            Recibimos una solicitud para restablecer la contraseña de tu cuenta.
+            Hacé clic en el botón de abajo para continuar.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr>
+              <td align="center">
+                <a href="${resetUrl}"
+                   style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+                  Restablecer contraseña
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:0;color:#555555;font-size:12px;line-height:1.6;text-align:center;">
+            Este link expira en 1 hora.<br>
+            Si no solicitaste esto, podés ignorar este email.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#111111;border-top:1px solid #2a2a2a;padding:14px 24px;text-align:center;">
+          <p style="margin:0;color:#444444;font-size:11px;">delvipass — Panel de gestión de eventos</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+
+  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re_xxxxxxxxxxxx") {
+    console.log(`[RESET PASSWORD EMAIL] Para: ${to} | URL: ${resetUrl}`);
+    return { id: "simulated" };
+  }
+
+  return resend.emails.send({ from, to, subject: "Restablecer contraseña — delvipass", html });
+}
