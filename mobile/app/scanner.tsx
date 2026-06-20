@@ -162,7 +162,7 @@ export default function ScannerScreen() {
             <View style={[s.corner, s.bl]} />
             <View style={[s.corner, s.br]} />
           </View>
-          <Text style={s.hint}>{loading ? "Validando..." : "Apuntá al código QR del invitado"}</Text>
+          <Text style={s.hint}>{loading ? "Validando..." : "Apuntá al código QR del asistente"}</Text>
           {loading && <ActivityIndicator color="white" size="large" style={{ marginTop: 16 }} />}
         </View>
       )}
