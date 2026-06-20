@@ -16,6 +16,10 @@ const s: Record<string, React.CSSProperties> = {
   th: { padding: "9px 14px", textAlign: "left" as const, fontSize: 10, fontWeight: 700, color: "#555", background: "#111", borderBottom: "1px solid #222", letterSpacing: 1, textTransform: "uppercase" as const },
   td: { padding: "11px 14px", borderBottom: "1px solid #1f1f1f", fontSize: 13, color: "#ccc" },
   actionBtn: { background: "none", border: "1px solid #2a2a2a", color: "#888", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontSize: 11 },
+  confirmRow: { display: "flex", gap: 12 },
+  confirmItem: { background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "14px 18px", flex: 1 },
+  confirmNum: { fontSize: 24, fontWeight: 700, color: "#f0f0f0" },
+  confirmLabel: { fontSize: 12, color: "#ccc", marginTop: 6, lineHeight: 1.5 },
 };
 
 function roleBadge(role: string): React.CSSProperties {
@@ -26,13 +30,6 @@ function roleBadge(role: string): React.CSSProperties {
     border: `1px solid ${role === "superadmin" ? "#4c1d95" : "#2a2a2a"}`,
   };
 }
-
-const _s: Record<string, React.CSSProperties> = {
-  confirmRow: { display: "flex", gap: 20 },
-  confirmItem: { background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "14px 18px", flex: 1 },
-  confirmNum: { fontSize: 24, fontWeight: 700, color: "#f0f0f0" },
-  confirmLabel: { fontSize: 12, color: "#ccc", marginTop: 6, lineHeight: 1.5 },
-};
 
 function StatCard({ value, label, icon, color }: { value: number | string; label: string; icon: React.ReactNode; color?: string }) {
   return (
