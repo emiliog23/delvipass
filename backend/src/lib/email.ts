@@ -96,6 +96,9 @@ export async function sendTicketEmail(data: TicketEmailData) {
   });
   const code = `#${ticketNumber.toString().padStart(4, "0")}`;
 
+  // Extraer el base64 puro para adjuntarlo como inline — Gmail iOS no renderiza data URLs
+  const qrBase64 = qrDataUrl.replace(/^data:image\/\w+;base64,/, "");
+
   const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
   const imageAbsoluteUrl = eventImageUrl
     ? (eventImageUrl.startsWith("http") ? eventImageUrl : `${BACKEND_URL}${eventImageUrl}`)
@@ -172,7 +175,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
           <tr>
             <td style="padding:16px 0 0;text-align:center;">
               <p style="margin:0 0 12px;color:#555555;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Codigo QR de acceso</p>
-              <img src="${qrDataUrl}" width="220" height="220"
+              <img src="cid:qr_code" width="220" height="220"
                    style="display:block;margin:0 auto 16px;border-radius:8px;"
                    alt="Codigo QR">
             </td>
@@ -227,5 +230,17 @@ export async function sendTicketEmail(data: TicketEmailData) {
     return { id: "simulated" };
   }
 
-  return resend.emails.send({ from, to, subject: `Tu entrada para ${eventName} — ${code}`, html });
+  return resend.emails.send({
+    from,
+    to,
+    subject: `Tu entrada para ${eventName} — ${code}`,
+    html,
+    attachments: [
+      {
+        filename: "entrada-qr.png",
+        content: qrBase64,
+        inlineContentId: "qr_code",
+      },
+    ],
+  });
 }
