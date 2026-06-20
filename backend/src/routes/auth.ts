@@ -60,8 +60,14 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
     res.status(401).json({ error: "Usuario o contraseña incorrectos" });
     return;
   }
-  const token = signToken({ userId: user.id, username: user.username, role: user.role });
-  res.json({ token, user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role } });
+  // Auto-promueve si el username coincide con SUPERADMIN_USERNAME en Render
+  let role = user.role;
+  if (process.env.SUPERADMIN_USERNAME && user.username === process.env.SUPERADMIN_USERNAME && role !== "superadmin") {
+    await prisma.user.update({ where: { id: user.id }, data: { role: "superadmin" } });
+    role = "superadmin";
+  }
+  const token = signToken({ userId: user.id, username: user.username, role });
+  res.json({ token, user: { id: user.id, username: user.username, name: user.name, email: user.email, role } });
 }));
 
 export default router;
