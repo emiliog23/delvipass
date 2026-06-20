@@ -31,7 +31,7 @@ const _s: Record<string, React.CSSProperties> = {
   confirmRow: { display: "flex", gap: 20 },
   confirmItem: { background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "14px 18px", flex: 1 },
   confirmNum: { fontSize: 24, fontWeight: 700, color: "#f0f0f0" },
-  confirmLabel: { fontSize: 11, color: "#555", marginTop: 4 },
+  confirmLabel: { fontSize: 12, color: "#888", marginTop: 6, lineHeight: 1.5 },
 };
 
 function StatCard({ value, label, icon, color }: { value: number | string; label: string; icon: React.ReactNode; color?: string }) {
