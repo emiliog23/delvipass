@@ -1,14 +1,32 @@
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
 import prisma from "../lib/prisma";
 import { fetchMpPayment } from "../lib/mercadopago";
 import { sendTicketEmail } from "../lib/email";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+function verifyMpSignature(req: Request): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  if (!secret) return true; // si no está configurado, se omite la verificación
+  const xSignature = req.headers["x-signature"] as string | undefined;
+  const xRequestId = req.headers["x-request-id"] as string | undefined;
+  if (!xSignature || !xRequestId) return false;
+  const ts = xSignature.match(/ts=(\d+)/)?.[1];
+  const v1 = xSignature.match(/v1=([a-f0-9]+)/)?.[1];
+  if (!ts || !v1) return false;
+  const dataId = (req.body?.data?.id ?? "").toString();
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+  const expected = crypto.createHmac("sha256", secret).update(manifest).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+}
+
 const router = Router();
 
 router.post("/mercadopago", async (req: Request, res: Response) => {
   res.sendStatus(200);
+
+  if (!verifyMpSignature(req)) return;
 
   const { type, data } = req.body ?? {};
   if (type !== "payment" || !data?.id) return;
