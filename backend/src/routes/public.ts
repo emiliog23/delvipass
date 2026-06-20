@@ -51,14 +51,17 @@ router.get("/events/:id", asyncHandler(async (req: Request, res: Response) => {
     select: {
       id: true, name: true, description: true, date: true, venue: true,
       imageUrl: true, capacity: true, purchaseEnabled: true, price: true,
-      _count: { select: { invitations: true } },
     },
   });
   if (!event || !event.purchaseEnabled) {
     res.status(404).json({ error: "Evento no disponible para compra" });
     return;
   }
-  res.json(event);
+  // Excluir pending_payment para que el frontend muestre disponibilidad real
+  const activeCount = await prisma.invitation.count({
+    where: { eventId: req.params.id, status: { not: "pending_payment" } },
+  });
+  res.json({ ...event, _count: { invitations: activeCount } });
 }));
 
 const purchaseSchema = z.object({

@@ -59,10 +59,11 @@ export default function BuySuccessPage() {
       api.confirmPurchase(invitationId, paymentId)
         .then(res => {
           if (!mountedRef.current) return;
-          setData(res);
+          // Marcar ANTES de setData para que el poll en vuelo no sobreescriba
           if (res.status === "pending" || res.status === "entered") {
-            confirmedRef.current = true; // detiene el poll
+            confirmedRef.current = true;
           }
+          setData(res);
         })
         .catch(() => {});
     }
@@ -72,6 +73,7 @@ export default function BuySuccessPage() {
       try {
         const res = await api.getInvitationStatus(invitationId!);
         if (!mountedRef.current) return;
+        if (confirmedRef.current) return; // confirmPurchase ya resolvió, no pisar
         setData(res);
         if (res.status === "pending" || res.status === "entered") {
           confirmedRef.current = true;
