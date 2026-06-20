@@ -564,8 +564,8 @@ export default function EventDetailPage() {
               </div>
               {inv.guestPhone && <div style={{ color: "#555", fontSize: 12, marginBottom: 4 }}>{inv.guestPhone}</div>}
               {inv.source === "purchase" && (
-                <div style={{ color: "#444", fontSize: 11, marginBottom: 10 }}>
-                  Compra{inv.confirmedVia ? ` · via ${inv.confirmedVia === "webhook" ? "webhook MP" : "redirect"}` : " · pago pendiente"}
+                <div style={{ color: "#009ee3", fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
+                  Compra online
                 </div>
               )}
               <div style={s.actions}>
@@ -626,18 +626,9 @@ export default function EventDetailPage() {
                       )}
                     </td>
                     <td style={{ ...s.td, fontSize: 11 }}>
-                      {inv.source === "purchase" ? (
-                        <div>
-                          <span style={{ color: "#009ee3", fontWeight: 700 }}>Compra</span>
-                          {inv.confirmedVia && (
-                            <div style={{ color: "#444", fontSize: 10, marginTop: 2 }}>
-                              via {inv.confirmedVia === "webhook" ? "webhook MP" : "redirect"}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ color: "#555" }}>Manual</span>
-                      )}
+                      {inv.source === "purchase"
+                        ? <span style={{ color: "#009ee3", fontWeight: 700 }}>Compra</span>
+                        : <span style={{ color: "#555" }}>Manual</span>}
                     </td>
                     <td style={{ ...s.td, color: "#555", fontSize: 12 }}>{inv.sentAt ? "Enviado" : "—"}</td>
                     <td style={s.td}>

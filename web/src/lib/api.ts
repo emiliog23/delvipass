@@ -68,6 +68,11 @@ export const api = {
   getWhatsAppLink: (eventId: string, invId: string) =>
     req<{ ok: boolean; waLink: string }>(`/invitations/events/${eventId}/invitations/${invId}/whatsapp-link`, { method: "POST" }),
 
+  // Superadmin
+  getSuperadminStats: () => req<any>("/superadmin/stats"),
+  promoteUser: (id: string) => req<any>(`/superadmin/users/${id}/promote`, { method: "POST" }),
+  demoteUser: (id: string) => req<any>(`/superadmin/users/${id}/demote`, { method: "POST" }),
+
   // Public invitation
   getPublicInvitation: (token: string) =>
     req<PublicInvitation>(`/invitations/public/${token}`),
@@ -94,6 +99,7 @@ export interface User {
   email: string;
   username: string;
   name: string;
+  role: string;
 }
 
 export interface Event {

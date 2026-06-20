@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -20,16 +20,28 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<StatsResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const fetchIdRef = useRef(0); // in-flight guard: ignores stale responses
 
   const loadStats = useCallback(async () => {
+    const id = ++fetchIdRef.current;
     try {
       const data = await api.getStats();
+      if (id !== fetchIdRef.current) return; // stale response, discard
       setStats(data);
-    } catch {
-      // silently fail on background refresh
+    } catch (err: any) {
+      if (id !== fetchIdRef.current) return;
+      // 401 → token expired or invalid, force logout
+      if (err?.message?.includes("401") || err?.message?.includes("autorizado")) {
+        setToken(null);
+        router.replace("/");
+        return;
+      }
+      // other errors: silently keep previous stats
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (id === fetchIdRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 

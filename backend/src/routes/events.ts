@@ -3,6 +3,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { asyncHandler } from "../lib/asyncHandler";
 import prisma from "../lib/prisma";
 import { uploadEventImage } from "../lib/upload";
 
@@ -20,16 +21,16 @@ const eventSchema = z.object({
   price: z.number().positive().optional(),
 });
 
-router.get("/", async (req: AuthRequest, res: Response) => {
+router.get("/", asyncHandler<AuthRequest>(async (req, res) => {
   const events = await prisma.event.findMany({
     where: { creatorId: req.userId },
     include: { _count: { select: { invitations: true } } },
     orderBy: { date: "desc" },
   });
   res.json(events);
-});
+}));
 
-router.post("/", async (req: AuthRequest, res: Response) => {
+router.post("/", asyncHandler<AuthRequest>(async (req, res) => {
   const parsed = eventSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Datos invalidos", details: parsed.error.flatten() });
@@ -40,9 +41,9 @@ router.post("/", async (req: AuthRequest, res: Response) => {
     include: { _count: { select: { invitations: true } } },
   });
   res.status(201).json(event);
-});
+}));
 
-router.get("/stats", async (req: AuthRequest, res: Response) => {
+router.get("/stats", asyncHandler<AuthRequest>(async (req, res) => {
   const events = await prisma.event.findMany({
     where: { creatorId: req.userId },
     include: {
@@ -65,9 +66,9 @@ router.get("/stats", async (req: AuthRequest, res: Response) => {
       entered: e.invitations.length,
     })),
   });
-});
+}));
 
-router.get("/:id", async (req: AuthRequest, res: Response) => {
+router.get("/:id", asyncHandler<AuthRequest>(async (req, res) => {
   const event = await prisma.event.findFirst({
     where: { id: req.params.id, creatorId: req.userId },
     include: { _count: { select: { invitations: true } } },
@@ -77,9 +78,9 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
     return;
   }
   res.json(event);
-});
+}));
 
-router.put("/:id", async (req: AuthRequest, res: Response) => {
+router.put("/:id", asyncHandler<AuthRequest>(async (req, res) => {
   const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: req.userId } });
   if (!existing) {
     res.status(404).json({ error: "Evento no encontrado" });
@@ -96,48 +97,45 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
     include: { _count: { select: { invitations: true } } },
   });
   res.json(event);
-});
+}));
 
-router.delete("/:id", async (req: AuthRequest, res: Response) => {
+router.delete("/:id", asyncHandler<AuthRequest>(async (req, res) => {
   const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: req.userId } });
   if (!existing) {
     res.status(404).json({ error: "Evento no encontrado" });
     return;
   }
-  await prisma.invitation.deleteMany({ where: { eventId: req.params.id } });
-  await prisma.event.delete({ where: { id: req.params.id } });
+  // Transaction: both deletes succeed or neither does
+  await prisma.$transaction([
+    prisma.invitation.deleteMany({ where: { eventId: req.params.id } }),
+    prisma.event.delete({ where: { id: req.params.id } }),
+  ]);
   res.json({ ok: true });
-});
+}));
 
 // Subir o reemplazar imagen del evento
 router.post("/:id/image", (req: AuthRequest, res: Response) => {
   uploadEventImage(req, res, async (err) => {
-    if (err) {
-      res.status(400).json({ error: "Archivo invalido o demasiado grande (max 5MB)" });
-      return;
+    if (err) { res.status(400).json({ error: "Archivo invalido o demasiado grande (max 5MB)" }); return; }
+    if (!req.file) { res.status(400).json({ error: "No se recibio ninguna imagen" }); return; }
+    try {
+      const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: req.userId } });
+      if (!existing) {
+        fs.unlink(req.file.path, () => {});
+        res.status(404).json({ error: "Evento no encontrado" });
+        return;
+      }
+      if (existing.imageUrl) {
+        const oldPath = path.join(__dirname, "../../uploads/events", path.basename(existing.imageUrl));
+        if (fs.existsSync(oldPath)) fs.unlink(oldPath, () => {});
+      }
+      const imageUrl = `/uploads/events/${req.file.filename}`;
+      const event = await prisma.event.update({ where: { id: req.params.id }, data: { imageUrl }, include: { _count: { select: { invitations: true } } } });
+      res.json(event);
+    } catch (e) {
+      if (req.file) fs.unlink(req.file.path, () => {});
+      res.status(500).json({ error: "Error interno del servidor" });
     }
-    if (!req.file) {
-      res.status(400).json({ error: "No se recibio ninguna imagen" });
-      return;
-    }
-    const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: req.userId } });
-    if (!existing) {
-      fs.unlinkSync(req.file.path);
-      res.status(404).json({ error: "Evento no encontrado" });
-      return;
-    }
-    // Borrar imagen anterior si existe
-    if (existing.imageUrl) {
-      const oldPath = path.join(__dirname, "../../uploads/events", path.basename(existing.imageUrl));
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }
-    const imageUrl = `/uploads/events/${req.file.filename}`;
-    const event = await prisma.event.update({
-      where: { id: req.params.id },
-      data: { imageUrl },
-      include: { _count: { select: { invitations: true } } },
-    });
-    res.json(event);
   });
 });
 

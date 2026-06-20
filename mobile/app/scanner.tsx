@@ -46,9 +46,11 @@ export default function ScannerScreen() {
   const [result, setResult] = useState<Result>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  // Ref como lock sincrónico — evita que eventos duplicados de la cámara
-  // pasen el guard antes de que el estado asíncrono se actualice.
   const scanLock = useRef(false);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timer on unmount to avoid setState on dead component
+  React.useEffect(() => () => { if (resetTimerRef.current) clearTimeout(resetTimerRef.current); }, []);
 
   function isInFrame(bounds?: { origin: { x: number; y: number }; size: { width: number; height: number } }) {
     if (!bounds) return true;
@@ -76,7 +78,8 @@ export default function ScannerScreen() {
       playSound("error");
       Vibration.vibrate([0, 100, 50, 100]);
     }
-    setTimeout(() => resetScanner(), 3500);
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = setTimeout(() => resetScanner(), 3500);
   }
 
   function resetScanner() {

@@ -16,3 +16,8 @@ export function getSession(): { token: string; user: User } | null {
   if (!token || !user) return null;
   return { token, user: JSON.parse(user) };
 }
+
+export function isSuperadmin(): boolean {
+  const session = getSession();
+  return session?.user?.role === "superadmin";
+}
