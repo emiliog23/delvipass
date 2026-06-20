@@ -42,8 +42,6 @@ router.get("/stats", asyncHandler<AuthRequest>(async (_req, res) => {
     }),
   ]);
 
-  const emailsSent = purchaseByStatus.find(r => r.status !== "pending_payment")?._count ?? 0;
-
   res.json({
     totalUsers,
     totalEvents,
@@ -63,6 +61,8 @@ router.get("/stats", asyncHandler<AuthRequest>(async (_req, res) => {
 
 // Promover usuario a superadmin
 router.post("/users/:id/promote", asyncHandler<AuthRequest>(async (req, res) => {
+  const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true } });
+  if (!target) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
   const user = await prisma.user.update({
     where: { id: req.params.id },
     data: { role: "superadmin" },
@@ -73,6 +73,12 @@ router.post("/users/:id/promote", asyncHandler<AuthRequest>(async (req, res) => 
 
 // Revocar superadmin
 router.post("/users/:id/demote", asyncHandler<AuthRequest>(async (req, res) => {
+  if (req.params.id === req.userId) {
+    res.status(400).json({ error: "No podés revocar tu propio rol de superadmin" });
+    return;
+  }
+  const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true } });
+  if (!target) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
   const user = await prisma.user.update({
     where: { id: req.params.id },
     data: { role: "user" },

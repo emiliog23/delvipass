@@ -60,8 +60,9 @@ router.post("/validate", asyncHandler(async (req: Request, res: Response) => {
     data: { status: "entered", enteredAt: new Date() },
   });
   if (result.count === 0) {
-    // Lost the race — another scanner already entered this ticket
-    res.json({ ok: false, alreadyEntered: true, guestName: inv.guestName, enteredAt: inv.enteredAt, event: { name: inv.event.name, date: inv.event.date, venue: inv.event.venue } });
+    // Lost the race — re-fetch to get the actual enteredAt set by the winning scanner
+    const updated = await prisma.invitation.findUnique({ where: { token }, select: { enteredAt: true } });
+    res.json({ ok: false, alreadyEntered: true, guestName: inv.guestName, enteredAt: updated?.enteredAt, event: { name: inv.event.name, date: inv.event.date, venue: inv.event.venue } });
     return;
   }
   res.json({ ok: true, guestName: inv.guestName, enteredAt: new Date(), event: { name: inv.event.name, date: inv.event.date, venue: inv.event.venue } });

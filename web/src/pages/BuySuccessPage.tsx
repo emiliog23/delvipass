@@ -55,7 +55,7 @@ export default function BuySuccessPage() {
     }
 
     const paymentId = params.get("payment_id") || params.get("collection_id");
-    if (paymentId) {
+    if (paymentId && invitationId) {
       api.confirmPurchase(invitationId, paymentId)
         .then(res => {
           if (!mountedRef.current) return;
@@ -148,7 +148,7 @@ export default function BuySuccessPage() {
             Si lo deseás, podés tomar una captura de pantalla para guardarlo en tu celular.
           </p>
           <p style={{ ...s.hint, marginTop: 12, color: "#4ade80", fontWeight: 600 }}>
-            Te enviamos tu entrada por mail.
+            Te enviamos una copia de tu entrada por mail.
           </p>
         </div>
       </div>

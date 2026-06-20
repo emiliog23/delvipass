@@ -53,10 +53,11 @@ router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   }
   const { username, password } = parsed.data;
   const user = await prisma.user.findUnique({ where: { username } });
-  // Always run bcrypt to avoid timing side-channel on username enumeration
-  const dummyHash = "$2a$10$invalidhashpaddingtomatchlength00000000000000000000000";
-  const valid = user ? await bcrypt.compare(password, user.passwordHash) : await bcrypt.compare(password, dummyHash).then(() => false);
-  if (!user || !valid) {
+  // Always run bcrypt to avoid timing side-channel on username enumeration.
+  // The dummy hash is a valid $2b$10$ hash so bcrypt runs the full KDF.
+  const DUMMY_HASH = "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW";
+  const valid = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
+  if (!valid || !user) {
     res.status(401).json({ error: "Usuario o contraseña incorrectos" });
     return;
   }

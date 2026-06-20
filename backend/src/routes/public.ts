@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import prisma from "../lib/prisma";
 import { fetchMpPayment } from "../lib/mercadopago";
 import { sendTicketEmail } from "../lib/email";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -44,7 +45,7 @@ async function createMpPreference(
 }
 
 // Informacion publica del evento (sin access token)
-router.get("/events/:id", async (req: Request, res: Response) => {
+router.get("/events/:id", asyncHandler(async (req: Request, res: Response) => {
   const event = await prisma.event.findUnique({
     where: { id: req.params.id },
     select: {
@@ -58,7 +59,7 @@ router.get("/events/:id", async (req: Request, res: Response) => {
     return;
   }
   res.json(event);
-});
+}));
 
 const purchaseSchema = z.object({
   guestName: z.string().min(2, "Nombre requerido"),
@@ -66,7 +67,7 @@ const purchaseSchema = z.object({
 });
 
 // Iniciar compra: crea invitation pending_payment + preferencia MP
-router.post("/events/:id/purchase", async (req: Request, res: Response) => {
+router.post("/events/:id/purchase", asyncHandler(async (req: Request, res: Response) => {
   const event = await prisma.event.findUnique({
     where: { id: req.params.id },
     select: {
@@ -114,10 +115,10 @@ router.post("/events/:id/purchase", async (req: Request, res: Response) => {
     await prisma.invitation.delete({ where: { id: inv.id } });
     res.status(502).json({ error: err instanceof Error ? err.message : "Error con MercadoPago" });
   }
-});
+}));
 
 // Estado de la invitation (para que la pagina de exito pollee)
-router.get("/invitations/:id", async (req: Request, res: Response) => {
+router.get("/invitations/:id", asyncHandler(async (req: Request, res: Response) => {
   const inv = await prisma.invitation.findUnique({
     where: { id: req.params.id },
     include: { event: { select: { name: true, date: true, venue: true, imageUrl: true } } },
@@ -137,10 +138,10 @@ router.get("/invitations/:id", async (req: Request, res: Response) => {
     qrDataUrl,
     event: inv.event,
   });
-});
+}));
 
 // Confirmacion directa post-pago: el front llama esto con el payment_id de la URL de retorno
-router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
+router.post("/invitations/:id/confirm", asyncHandler(async (req: Request, res: Response) => {
   const { paymentId } = req.body;
   if (!paymentId) {
     res.status(400).json({ error: "paymentId requerido" });
@@ -197,6 +198,6 @@ router.post("/invitations/:id/confirm", async (req: Request, res: Response) => {
       inviteUrl: `${FRONTEND_URL}/invite/${inv.token}`,
     }).catch(err => console.error("[sendTicketEmail]", err));
   }
-});
+}));
 
 export default router;
